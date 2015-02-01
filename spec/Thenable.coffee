@@ -41,11 +41,17 @@ describe 'Thenable named promises', ->
         throw new Error 'Not landscape'
       .else 'portrait', ->
         return {}
+      .else 'square', ->
+        throw new Error 'Not square'
+      .then 'large', ->
+        throw new Error 'Too small'
+      .else 'small', ->
+        return {}
       .always (path, val) ->
         # The real resolved path (always hasn't resolved yet)
-        chai.expect(t.path).to.eql ['w-image', 'portrait']
+        chai.expect(t.path).to.eql ['w-image', 'portrait', 'small']
         # Current path (if this resolves)
-        chai.expect(path).to.eql ['w-image', 'portrait', 'always']
+        chai.expect(path).to.eql ['w-image', 'portrait', 'small', 'always']
         process.nextTick ->
           try
             console.error t.toDOT()
