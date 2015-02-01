@@ -42,7 +42,9 @@ describe 'Thenable named promises', ->
       .else 'portrait', ->
         return true
       .always (path, val) ->
+        # The real resolved path (always hasn't resolved yet)
         chai.expect(t.path).to.eql ['w-image', 'portrait']
+        # Current path (if this resolves)
         chai.expect(path).to.eql ['w-image', 'portrait', 'always']
         process.nextTick ->
           try
