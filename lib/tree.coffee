@@ -4,11 +4,8 @@ class Tree
   constructor: (@name) ->
     trees++
     @name = "tree#{trees}" unless @name
-    @nodes = {}
     @choices = {}
-    @paths = {}
     @decisions = []
-    @edges = []
     @path = []
     @path.push @addChoice 'root',
       label: 'root'
@@ -16,18 +13,20 @@ class Tree
     @namedPath = []
 
   getRoot: ->
-    @nodes[@getId('root')]
+    @choices[@getId('root')]
 
   addChoice: (name, attributes = {}) ->
     id = @getId name
-    @choices[id] = attributes
+    @choices[id] =
+      attributes: attributes
     id
 
-  registerDecision: (name, type, attributes = {}) ->
+  registerDecision: (name, type, data, attributes = {}) ->
     id = @getId name
     return unless @choices[id]
 
     @choices[id].type = type
+    @choices[id].data = data
     if type is 'ignored'
       @choices[id].previous = @path[@path.length - 2]
     else
@@ -40,57 +39,45 @@ class Tree
       label: name
       attributes: attributes
 
-  followChoice: (name, attributes) ->
-    @registerDecision name, 'fulfilled', attributes
+  followChoice: (name, data, attributes) ->
+    @registerDecision name, 'fulfilled', data, attributes
     id = @getId name
     @path.push id
     @namedPath.push name if name
 
-  rejectChoice: (name, attributes) ->
-    @registerDecision name, 'rejected', attributes
+  rejectChoice: (name, data, attributes) ->
+    @registerDecision name, 'rejected', data, attributes
 
   ignoreChoice: (name, attributes) ->
-    @registerDecision name, 'ignored', attributes
+    @registerDecision name, 'ignored', null, attributes
 
   getId: (name) ->
-    return name if @nodes[name]
+    return name if @choices[name]
     "#{@name}_#{name}".replace /-/g, '_'
-
-  addNode: (name, attributes = {}) ->
-    id = @getId name
-    attributes.name = name
-    @nodes[id] = attributes
-    id
-
-  addEdge: (from, to, attributes = {}) ->
-    fromId = @getId from
-    toId = @getId to
-    @edges.push
-      from: fromId
-      to: toId
-      attributes: attributes
 
   toDOT: ->
     dot = ''
     dot += "digraph #{@name} {\n"
-    for name, attributes of @choices
+    for name, choice of @choices
       dot += "  #{name}"
 
-      attributes.shape = 'box'
+      choice.attributes.shape = 'box'
       if name is @getId 'root'
-        attributes.shape = 'circle'
-        attributes.label = ''
+        choice.attributes.shape = 'circle'
+        choice.attributes.label = ''
 
-      if Object.keys(attributes).length
+      switch choice.type
+        when 'ignored' then choice.attributes.style = 'dotted'
+        when 'rejected'
+          choice.attributes.color = 'red'
+          choice.attributes.fontcolor = 'red'
+          choice.attributes.label = choice.data.message if choice.data?.message
+
+      if Object.keys(choice.attributes).length
         dot += " ["
         attribs = []
-        switch attributes.type
-          when 'ignored' then attributes.style = 'dotted'
-          when 'rejected'
-            attributes.color = 'red'
-            attributes.fontcolor = 'red'
 
-        for key, val of attributes
+        for key, val of choice.attributes
           if typeof val is 'boolean'
             attribs.push "#{key}=#{val}"
             continue

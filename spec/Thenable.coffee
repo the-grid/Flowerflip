@@ -38,7 +38,7 @@ describe 'Thenable named promises', ->
       .else 'wo-image', ->
         return true
       .then 'landscape', ->
-        throw new Error 'foo'
+        throw new Error 'Not landscape'
       .else 'portrait', ->
         return true
       .always (path, val) ->

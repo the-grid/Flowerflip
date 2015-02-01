@@ -119,10 +119,11 @@ class Thenable
       sub = @subscribers.shift()
       funcName = if @state is State.FULFILLED then 'fulfilled' else 'rejected'
       funcName = 'always' if sub.always
+      decisionName = sub.name or funcName
       func = sub[funcName]
 
       unless typeof func is 'function'
-        @decisionTree.ignoreChoice sub.name or funcName
+        @decisionTree.ignoreChoice decisionName
         sub.promise.changeState @state, @value
         continue
 
@@ -132,18 +133,18 @@ class Thenable
         val = func subPath, @value
         if val and typeof val.then is 'function' and typeof val.else is 'function'
           # Promise returned
-          val.then (ret) ->
+          val.then (ret) =>
+            @decisionTree.followChoice decisionName, ret
             sub.promise.changeState State.FULFILLED, ret
-            @decisionTree.followChoice sub.name or funcName
-          val.else (e) ->
+          val.else (e) =>
+            @decisionTree.rejectChoice decisionName, e
             sub.promise.changeState State.REJECTED, e
-            @decisionTree.rejectChoice sub.name or funcName
           continue
         # Straight-up value returned
-        @decisionTree.followChoice sub.name or funcName
+        @decisionTree.followChoice decisionName, val
         sub.promise.changeState State.FULFILLED, val
       catch e
-        @decisionTree.rejectChoice sub.name or funcName
+        @decisionTree.rejectChoice decisionName, e
         sub.promise.changeState State.REJECTED, e
 
   async: (fn) ->
