@@ -52,6 +52,37 @@ describe 'Thenable named promises', ->
         chai.expect(t.path).to.eql ['w-image', 'portrait', 'small']
         # Current path (if this resolves)
         chai.expect(path).to.eql ['w-image', 'portrait', 'small', 'always']
+        done()
+    it 'should produce the expected path also when there are sub-trees', (done) ->
+      t = new Thenable
+      t.tree ->
+        true
+      .then 'w-image', ->
+        return {}
+      .else 'wo-image', ->
+        return {}
+      .then 'landscape', ->
+        throw new Error 'Not landscape'
+      .else 'portrait', ->
+        return {}
+      .else 'square', ->
+        throw new Error 'Not square'
+      .then 'faces', ->
+        t2 = new Thenable
+        t2.tree 'face-detection', ->
+          {}
+        .then 'match-people', ->
+          {}
+        .then 'find-friends', ->
+          throw new Error 'Trying hard'
+        .else 'no-friends', (path, faces) ->
+          {}
+      .always (path, val) ->
+        console.log path
+        # The real resolved path (always hasn't resolved yet)
+        chai.expect(t.path).to.eql ['w-image', 'portrait', 'faces']
+        # Current path (if this resolves)
+        chai.expect(path).to.eql ['w-image', 'portrait', 'faces', 'always']
         process.nextTick ->
           try
             console.error t.toDOT()

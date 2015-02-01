@@ -3,7 +3,7 @@ trees = 0
 class Tree
   constructor: (@name) ->
     trees++
-    @name = "tree#{trees}" unless @name
+    @name = "cluster#{trees}" unless @name
     @choices = {}
     @decisions = []
     @path = []
@@ -13,29 +13,37 @@ class Tree
     @namedPath = []
 
   getRoot: ->
-    @choices[@getId('root')]
+    @getChoice 'root'
+
+  getChoice: (name) ->
+    @choices[@getId(name)]
 
   addChoice: (name, attributes = {}) ->
     id = @getId name
     @choices[id] =
+      id: id
       attributes: attributes
     id
 
   registerDecision: (name, type, data, attributes = {}) ->
-    id = @getId name
-    return unless @choices[id]
+    choice = @getChoice name
+    return unless choice
 
-    @choices[id].type = type
-    @choices[id].data = data
+    choice.type = type
+    choice.data = data
+
+    choice.subTree = attributes.subTree
+    delete attributes.subTree
+
     if type is 'ignored'
-      @choices[id].previous = @path[@path.length - 2]
+      choice.previous = @path[@path.length - 2]
     else
-      @choices[id].previous = @path[@path.length - 1]
+      choice.previous = @path[@path.length - 1]
 
     attributes.type = type
     @decisions.push
-      from: @choices[id].previous
-      to: id
+      from: choice.previous
+      to: choice.id
       label: name
       attributes: attributes
 
@@ -55,17 +63,35 @@ class Tree
     return name if @choices[name]
     "#{@name}_#{name}".replace /-/g, '_'
 
-  toDOT: ->
-    dot = ''
-    dot += "digraph #{@name} {\n"
+  toDOT: (type = 'digraph', prefix = '', attributes = {}) ->
+    dot = prefix
+    dot += "#{type} #{@name} {\n"
+    for key, val of attributes
+      dot += "#{prefix}  #{key}=#{val};\n"
     for name, choice of @choices
-      dot += "  #{name}"
+      connected = @decisions.filter (edge) ->
+        edge.from is choice.id or edge.to is choice.id
+      continue unless connected.length
+
+      if choice.subTree
+        dot += choice.subTree.toDOT 'subgraph', "#{prefix}  ",
+          color: 'lightgrey'
+          style: 'filled'
+        for edge in @decisions
+          if edge.to is choice.id
+            edge.toSub = choice.subTree.getId 'root'
+          if edge.from is choice.id
+            edge.fromSub = choice.subTree.path[choice.subTree.path.length - 2]
+        continue
+
+      dot += "#{prefix}  #{name}"
 
       choice.attributes.shape = 'box'
       choice.attributes.label = typeof choice.data
       choice.attributes.label = '' unless choice.data
+      console.log choice.subTree.toDOT() if choice.subTree
       if name is @getId 'root'
-        choice.attributes.shape = 'circle'
+        choice.attributes.shape = 'Mdiamond'
 
       switch choice.type
         when 'ignored'
@@ -90,7 +116,9 @@ class Tree
       dot += ";\n"
 
     for edge in @decisions
-      dot += "  #{edge.from} -> #{edge.to}"
+      from = edge.fromSub or edge.from
+      to = edge.toSub or edge.to
+      dot += "#{prefix}  #{from} -> #{to}"
       if Object.keys(edge.attributes).length
         dot += " ["
         attribs = []
@@ -105,7 +133,7 @@ class Tree
         dot += attribs.join ','
         dot += "]"
       dot += ";\n"
-    dot += "}\n"
+    dot += "#{prefix}}\n"
     dot
 
 module.exports = Tree

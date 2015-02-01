@@ -134,11 +134,17 @@ class Thenable
         if val and typeof val.then is 'function' and typeof val.else is 'function'
           # Promise returned
           val.then (ret) =>
-            @decisionTree.followChoice decisionName, ret
-            sub.promise.changeState State.FULFILLED, ret
+            @async =>
+              @decisionTree.followChoice decisionName, ret,
+                subTree: val.decisionTree
+              sub.promise.changeState State.FULFILLED, ret
+            ret
           val.else (e) =>
-            @decisionTree.rejectChoice decisionName, e
-            sub.promise.changeState State.REJECTED, e
+            @async =>
+              @decisionTree.rejectChoice decisionName, e,
+                subTree: val.decisionTree
+              sub.promise.changeState State.REJECTED, e
+            e
           continue
         # Straight-up value returned
         @decisionTree.followChoice decisionName, val
