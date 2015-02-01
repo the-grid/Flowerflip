@@ -62,12 +62,15 @@ class Tree
       dot += "  #{name}"
 
       choice.attributes.shape = 'box'
+      choice.attributes.label = typeof choice.data
+      choice.attributes.label = '' unless choice.data
       if name is @getId 'root'
         choice.attributes.shape = 'circle'
-        choice.attributes.label = ''
 
       switch choice.type
-        when 'ignored' then choice.attributes.style = 'dotted'
+        when 'ignored'
+          choice.attributes.style = 'dotted'
+          choice.attributes.label = ''
         when 'rejected'
           choice.attributes.color = 'red'
           choice.attributes.fontcolor = 'red'

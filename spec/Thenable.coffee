@@ -34,13 +34,13 @@ describe 'Thenable named promises', ->
       t.tree ->
         true
       .then 'w-image', ->
-        return true
+        return {}
       .else 'wo-image', ->
-        return true
+        return {}
       .then 'landscape', ->
         throw new Error 'Not landscape'
       .else 'portrait', ->
-        return true
+        return {}
       .always (path, val) ->
         # The real resolved path (always hasn't resolved yet)
         chai.expect(t.path).to.eql ['w-image', 'portrait']
