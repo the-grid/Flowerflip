@@ -41,13 +41,14 @@ class Thenable
       name = null
 
     nodeName = name or 'then'
-    @decisionTree.addChoice nodeName,
+    nodeId = @decisionTree.addChoice nodeName,
       label: nodeName
 
     promise = new Thenable @decisionTree
 
     @async =>
       @subscribers.push
+        id: nodeId
         name: name
         promise: promise
         fulfilled: onFulfilled
@@ -58,15 +59,17 @@ class Thenable
     if typeof name is 'function'
       onRejected = name
       name = null
+
+    nodeName = name or 'else'
+    nodeId = @decisionTree.addChoice nodeName,
+      label: nodeName
+
     promise = new Thenable @decisionTree
     @subscribers.push
+      id: nodeId
       name: name
       promise: promise
       rejected: onRejected
-
-    nodeName = name or 'else'
-    @decisionTree.addChoice nodeName,
-      label: nodeName
 
     do @resolve
     promise
@@ -75,15 +78,17 @@ class Thenable
     if typeof name is 'function'
       onAlways = name
       name = null
+
+    nodeName = name or 'always'
+    nodeId = @decisionTree.addChoice nodeName,
+      label: nodeName
+
     promise = new Thenable @decisionTree
     @subscribers.push
+      id: nodeId
       name: name
       promise: promise
       always: onAlways
-
-    nodeName = name or 'always'
-    @decisionTree.addChoice nodeName,
-      label: nodeName
 
     do @resolve
     promise
@@ -119,11 +124,11 @@ class Thenable
       sub = @subscribers.shift()
       funcName = if @state is State.FULFILLED then 'fulfilled' else 'rejected'
       funcName = 'always' if sub.always
-      decisionName = sub.name or funcName
       func = sub[funcName]
 
       unless typeof func is 'function'
-        @decisionTree.ignoreChoice decisionName
+        @decisionTree.ignoreChoice sub.id,
+          label: sub.name or funcName
         sub.promise.changeState @state, @value
         continue
 
@@ -135,22 +140,26 @@ class Thenable
           # Promise returned
           val.then (ret) =>
             @async =>
-              @decisionTree.followChoice decisionName, ret,
+              @decisionTree.followChoice sub.id, ret,
                 subTree: val.decisionTree
+                label: sub.name or funcName
               sub.promise.changeState State.FULFILLED, ret
             ret
           val.else (e) =>
             @async =>
-              @decisionTree.rejectChoice decisionName, e,
+              @decisionTree.rejectChoice sub.id, e,
                 subTree: val.decisionTree
+                label: sub.name or funcName
               sub.promise.changeState State.REJECTED, e
             e
           continue
         # Straight-up value returned
-        @decisionTree.followChoice decisionName, val
+        @decisionTree.followChoice sub.id, val,
+          label: sub.name or funcName
         sub.promise.changeState State.FULFILLED, val
       catch e
-        @decisionTree.rejectChoice decisionName, e
+        @decisionTree.rejectChoice sub.id, e,
+          label: sub.name or funcName
         sub.promise.changeState State.REJECTED, e
 
   async: (fn) ->

@@ -20,8 +20,10 @@ class Tree
 
   addChoice: (name, attributes = {}) ->
     id = @getId name
+    id = "#{id}_#{Object.keys(@choices).length}" if @choices[id]
     @choices[id] =
       id: id
+      name: name
       attributes: attributes
     id
 
@@ -49,9 +51,9 @@ class Tree
 
   followChoice: (name, data, attributes) ->
     @registerDecision name, 'fulfilled', data, attributes
-    id = @getId name
-    @path.push id
-    @namedPath.push name if name
+    node = @getChoice name
+    @path.push node.id
+    @namedPath.push node.name if node.name
 
   rejectChoice: (name, data, attributes) ->
     @registerDecision name, 'rejected', data, attributes
@@ -89,9 +91,16 @@ class Tree
       choice.attributes.shape = 'box'
       choice.attributes.label = typeof choice.data
       choice.attributes.label = '' unless choice.data
-      console.log choice.subTree.toDOT() if choice.subTree
+
       if name is @getId 'root'
         choice.attributes.shape = 'Mdiamond'
+        choice.attributes.label = ''
+
+      if @decisions[@decisions.length - 1].to is choice.id
+        continue if prefix.length
+        choice.attributes.shape = 'Msquare'
+        choice.attributes.label = ''
+
 
       switch choice.type
         when 'ignored'
@@ -122,7 +131,7 @@ class Tree
       if Object.keys(edge.attributes).length
         dot += " ["
         attribs = []
-        edge.attributes.label = edge.label
+        edge.attributes.label = edge.label unless edge.attributes.label
         switch edge.attributes.type
           when 'ignored' then edge.attributes.style = 'dotted'
           when 'rejected'

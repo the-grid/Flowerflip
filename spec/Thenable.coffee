@@ -27,6 +27,22 @@ describe 'Thenable named promises', ->
         chai.expect(e.message).to.equal 'Failboat'
         done()
       t.deliver 'Hello'
+  describe 'with anonymous thenable', ->
+    it 'should resolve', (done) ->
+      t = new Thenable
+      t.then ->
+        throw new Error 'Error'
+      .else ->
+        {}
+      .else ->
+        {}
+      .then ->
+        {}
+      .always ->
+        chai.expect(t.path).to.eql ['else', 'then']
+        done()
+        true
+      t.deliver 'foo'
 
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
@@ -77,12 +93,13 @@ describe 'Thenable named promises', ->
           throw new Error 'Trying hard'
         .else 'no-friends', (path, faces) ->
           {}
+      .then 'cropping', ->
+        {}
       .always (path, val) ->
-        console.log path
         # The real resolved path (always hasn't resolved yet)
-        chai.expect(t.path).to.eql ['w-image', 'portrait', 'faces']
+        chai.expect(t.path).to.eql ['w-image', 'portrait', 'faces', 'cropping']
         # Current path (if this resolves)
-        chai.expect(path).to.eql ['w-image', 'portrait', 'faces', 'always']
+        chai.expect(path).to.eql ['w-image', 'portrait', 'faces', 'cropping', 'always']
         process.nextTick ->
           try
             console.error t.toDOT()
