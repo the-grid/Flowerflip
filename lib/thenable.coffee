@@ -1,30 +1,33 @@
+Tree = require './tree'
+
 State =
   PENDING: 0
   FULFILLED: 1
   REJECTED: 2
 
 class Thenable
-  constructor: ->
-    @path = []
+  constructor: (@decisionTree) ->
     @state = State.PENDING
     @value = null
     @subscribers = []
+    @decisionTree = new Tree unless @decisionTree
+    @path = @decisionTree.namedPath
 
   tree: (name, callback) ->
     if typeof name is 'function'
       callback = name
       name = null
 
+    @decisionTree.getRoot().label = name if name
+
     try
       val = callback()
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (ret) =>
-          @path.push name if name
           @deliver ret
         val.else (e) =>
           @reject e
         return
-      @path.push name if name
       @deliver val
     catch e
       @reject e
@@ -36,23 +39,34 @@ class Thenable
     if typeof name is 'function'
       onFulfilled = name
       name = null
-    promise = new Thenable
-    @subscribers.push
-      name: name
-      promise: promise
-      fulfilled: onFulfilled
-    do @resolve
+
+    nodeName = name or 'then'
+    @decisionTree.addChoice nodeName,
+      label: nodeName
+
+    promise = new Thenable @decisionTree
+
+    @async =>
+      @subscribers.push
+        name: name
+        promise: promise
+        fulfilled: onFulfilled
+      do @resolve
     promise
 
   else: (name, onRejected) ->
     if typeof name is 'function'
       onRejected = name
       name = null
-    promise = new Thenable
+    promise = new Thenable @decisionTree
     @subscribers.push
       name: name
       promise: promise
       rejected: onRejected
+
+    nodeName = name or 'else'
+    @decisionTree.addChoice nodeName,
+      label: nodeName
 
     do @resolve
     promise
@@ -61,11 +75,15 @@ class Thenable
     if typeof name is 'function'
       onAlways = name
       name = null
-    promise = new Thenable
+    promise = new Thenable @decisionTree
     @subscribers.push
       name: name
       promise: promise
       always: onAlways
+
+    nodeName = name or 'always'
+    @decisionTree.addChoice nodeName,
+      label: nodeName
 
     do @resolve
     promise
@@ -99,28 +117,38 @@ class Thenable
 
     while @subscribers.length
       sub = @subscribers.shift()
-      sub.promise.path = @path
-      func = if @state is State.FULFILLED then sub.fulfilled else sub.rejected
-      func = sub.always if sub.always
+      funcName = if @state is State.FULFILLED then 'fulfilled' else 'rejected'
+      funcName = 'always' if sub.always
+      func = sub[funcName]
 
       unless typeof func is 'function'
+        @decisionTree.ignoreChoice sub.name or funcName
         sub.promise.changeState @state, @value
         continue
 
       try
-        @path.push sub.name if sub.name
-        val = func @path, @value
+        subPath = @path.slice(0)
+        subPath.push sub.name or funcName
+        val = func subPath, @value
         if val and typeof val.then is 'function' and typeof val.else is 'function'
           # Promise returned
           val.then (ret) ->
             sub.promise.changeState State.FULFILLED, ret
+            @decisionTree.followChoice sub.name or funcName
           val.else (e) ->
             sub.promise.changeState State.REJECTED, e
+            @decisionTree.rejectChoice sub.name or funcName
           continue
         # Straight-up value returned
+        @decisionTree.followChoice sub.name or funcName
         sub.promise.changeState State.FULFILLED, val
       catch e
-        @path.pop()
+        @decisionTree.rejectChoice sub.name or funcName
         sub.promise.changeState State.REJECTED, e
+
+  async: (fn) ->
+    process.nextTick fn
+
+  toDOT: -> @decisionTree.toDOT()
 
 module.exports = Thenable

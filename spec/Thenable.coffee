@@ -31,7 +31,9 @@ describe 'Thenable named promises', ->
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
       t = new Thenable
-      t.tree 'w-image', ->
+      t.tree ->
+        true
+      .then 'w-image', ->
         return true
       .else 'wo-image', ->
         return true
@@ -39,9 +41,16 @@ describe 'Thenable named promises', ->
         throw new Error 'foo'
       .else 'portrait', ->
         return true
-      .then (path, val) ->
+      .always (path, val) ->
         chai.expect(t.path).to.eql ['w-image', 'portrait']
-        done()
+        chai.expect(path).to.eql ['w-image', 'portrait', 'always']
+        process.nextTick ->
+          try
+            console.error t.toDOT()
+          catch e
+            console.log e
+          done()
+        true
 ###
 articleComponent = (ctx, item, promise) ->
   block = ctx.getBlock (b) ->
