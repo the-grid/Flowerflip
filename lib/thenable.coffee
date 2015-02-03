@@ -35,6 +35,31 @@ class Thenable
 
   branch: (name, callback) ->
 
+  all: (name, tasks) ->
+    if typeof name isnt 'string'
+      tasks = name
+      name = null
+
+    nodeName = name or 'all'
+    @then nodeName, (path, data) ->
+      fulfilled = []
+      rejected = []
+      composite = new Thenable
+      tasks.forEach (t, i) ->
+        val = t data
+        if val and typeof val.then is 'function' and typeof val.else is 'function'
+          val.then (p, d) ->
+            fulfilled.push d
+            return unless fulfilled.length is tasks.length
+            composite.deliver fulfilled
+            d
+          val.else (p, e) ->
+            rejected.push e
+            composite.reject e if composite.state is State.PENDING
+            e
+          return
+      composite
+
   then: (name, onFulfilled) ->
     if typeof name is 'function'
       onFulfilled = name
@@ -113,9 +138,11 @@ class Thenable
 
   deliver: (value) ->
     @changeState State.FULFILLED, value
+    @
 
   reject: (value) ->
     @changeState State.REJECTED, value
+    @
 
   resolve: ->
     return if @state is State.PENDING
@@ -138,19 +165,18 @@ class Thenable
         val = func subPath, @value
         if val and typeof val.then is 'function' and typeof val.else is 'function'
           # Promise returned
-          val.then (ret) =>
+          val.then (path, ret) =>
             @async =>
               @decisionTree.followChoice sub.id, ret,
                 subTree: val.decisionTree
                 label: sub.name or funcName
               sub.promise.changeState State.FULFILLED, ret
             ret
-          val.else (e) =>
-            @async =>
-              @decisionTree.rejectChoice sub.id, e,
-                subTree: val.decisionTree
-                label: sub.name or funcName
-              sub.promise.changeState State.REJECTED, e
+          val.else (path, e) =>
+            @decisionTree.rejectChoice sub.id, e,
+              subTree: val.decisionTree
+              label: sub.name or funcName
+            sub.promise.changeState State.REJECTED, e
             e
           continue
         # Straight-up value returned

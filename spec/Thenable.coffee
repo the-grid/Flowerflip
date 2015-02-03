@@ -47,31 +47,59 @@ describe 'Thenable named promises', ->
   describe 'with all & return values', ->
     it 'should resolve', (done) ->
       t = new Thenable
+
+      y1 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'yep-1', ->
+          1
+      y2 = (data) ->
+        th = new Thenable t.decisionTree
+        th.deliver data
+        .then 'yep-2', ->
+          2
+      y3 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'yep-3', ->
+          3
+
+      n1 = ( data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'nope-1', (path, data) ->
+          e = new Error ""
+          e.data =
+            yeps: data
+            nopes: 1
+          throw e
+      n2 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'nope-2', (path, data) ->
+          e = new Error ""
+          e.data =
+            yeps: data
+            nopes: 2
+          e
+      n3 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'nope-3', (path, data) ->
+          e = new Error ""
+          e.data =
+            yeps: data
+            nopes: 3
+          throw e
+
       t.tree 'start', ->
         {}
-      .then 'yep-1', ->
-        return 1
-      .then 'yep-2', ->
-        return 2
-      .then 'yep-3', ->
-        return 3
-      .all 'all-yep', (choice, data) ->
+      .all [y1, y2, y3]
+      .then 'all-yep', (choice, data) ->
         chai.expect(data).to.eql [1,2,3]
-      .then 'nope-1', (choice, data) ->
-        e = new Error ""
-        e.data =
-          yeps: data
-          nopes: 1
-        throw e
-      .then 'nope-2', ->
-        e = new Error ""
-        e.data = 2
-        throw e
-      .then 'nope-3', ->
-        e = new Error ""
-        e.data = 3
-        throw e
-      .all 'all-nope', ->
+        data
+      .all [n1, n2, n3]
+      .then 'all-nope', ->
         {}
       .else 'all-nope-else', (choice, e) ->
         chai.expect(e.data).to.eql
@@ -79,13 +107,13 @@ describe 'Thenable named promises', ->
           nopes: 1
         return e.data
       .always (choice, data) ->
-        chai.expect(t.path).to.eql ['start', 'yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']
+        cleanPath = t.path.filter (part) -> true unless part in ['else', 'then', 'all']
+        chai.expect(cleanPath).to.eql ['yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']
         chai.expect(data).to.eql
           yeps: [1,2,3]
           nopes: 1
         done()
         true
-      t.deliver 'foo'
 
   describe 'with looping thenable feeding the same tree', ->
     it 'should resolve', (done) ->
@@ -113,7 +141,6 @@ describe 'Thenable named promises', ->
           {}
         .else (path, err) ->
           chai.expect(t.path).to.eql ['one', 'then', 'two', 'then', 'three']
-          console.log t.decisionTree
           done()
         t.deliver 'foo'
       do looper
