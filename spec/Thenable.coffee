@@ -46,7 +46,7 @@ describe 'Thenable named promises', ->
       
   describe 'with all & return values', ->
     it 'should resolve', (done) ->
-      t = new Thenable 
+      t = new Thenable
       t.tree 'start', ->
         {}
       .then 'yep-1', ->
@@ -59,11 +59,11 @@ describe 'Thenable named promises', ->
         chai.expect(data).to.eql [1,2,3]
       .then 'nope-1', (choice, data) ->
         e = new Error ""
-        e.data = 
+        e.data =
           yeps: data
           nopes: 1
         throw e
-      .then 'nope-2', ->  
+      .then 'nope-2', ->
         e = new Error ""
         e.data = 2
         throw e
@@ -74,13 +74,13 @@ describe 'Thenable named promises', ->
       .all 'all-nope', ->
         {}
       .else 'all-nope-else', (choice, e) ->
-        chai.expect(e.data).to.eql 
+        chai.expect(e.data).to.eql
           yeps: [1,2,3]
           nopes: 1
         return e.data
       .always (choice, data) ->
-        chai.expect(t.path).to.eql ['start', 'yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']        
-        chai.expect(data).to.eql 
+        chai.expect(t.path).to.eql ['start', 'yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']
+        chai.expect(data).to.eql
           yeps: [1,2,3]
           nopes: 1
         done()
@@ -120,7 +120,7 @@ describe 'Thenable named promises', ->
 
   describe 'with contested static node branching', ->
     it 'should resolve', (done) ->
-      t = new Thenable 
+      t = new Thenable
       t.tree 'start', (node, data) ->
         node.branch 'option-1', ->
           {}
@@ -145,7 +145,7 @@ describe 'Thenable named promises', ->
   
   describe 'with contested dynamic node branching', ->
     it 'should resolve', (done) ->
-      t = new Thenable 
+      t = new Thenable
         # API method to choose a tied contest
         decideTie: (choices) ->
           return choices[0]
@@ -158,7 +158,7 @@ describe 'Thenable named promises', ->
       .then 'after', ->
         return true
       .always ->
-        tree = t.decisionTree        
+        tree = t.decisionTree
         
         chai.expect(t.path).to.eql ['start', 'foo', 'after']
         
