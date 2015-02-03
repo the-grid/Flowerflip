@@ -6,7 +6,7 @@ State =
   REJECTED: 2
 
 class Thenable
-  constructor: (@decisionTree) ->
+  constructor: (@decisionTree, @options) ->
     @state = State.PENDING
     @value = null
     @subscribers = []
@@ -18,10 +18,12 @@ class Thenable
       callback = name
       name = null
 
-    @decisionTree.getRoot().label = name if name
+    root = @decisionTree.getRoot()
+    root.attributes = {} unless root.attributes
+    root.attributes.label = name if name
 
     try
-      val = callback()
+      val = callback root
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (ret) =>
           @deliver ret
@@ -34,6 +36,10 @@ class Thenable
     @
 
   branch: (name, callback) ->
+    @
+
+  contest: ->
+    @
 
   all: (name, tasks) ->
     if typeof name isnt 'string'
@@ -56,6 +62,35 @@ class Thenable
           val.else (p, e) ->
             rejected.push e
             composite.reject e if composite.state is State.PENDING
+            e
+          return
+      composite
+
+  some: (name, tasks) ->
+    if typeof name isnt 'string'
+      tasks = name
+      name = null
+
+    nodeName = name or 'some'
+    @then nodeName, (path, data) ->
+      fulfilled = []
+      rejected = []
+      composite = new Thenable
+      tasks.forEach (t, i) ->
+        val = t data
+        if val and typeof val.then is 'function' and typeof val.else is 'function'
+          val.then (p, d) ->
+            fulfilled.push d
+            return unless fulfilled.length + rejected.length is tasks.length
+            composite.deliver fulfilled
+            d
+          val.else (p, e) ->
+            rejected.push e
+            return unless fulfilled.length + rejected.length is tasks.length
+            if rejected.length is tasks.length
+              composite.reject e if composite.state is State.PENDING
+            else
+              composite.deliver fulfilled
             e
           return
       composite

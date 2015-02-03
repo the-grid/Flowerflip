@@ -115,6 +115,76 @@ describe 'Thenable named promises', ->
         done()
         true
 
+  describe 'with some & return values', ->
+    it 'should resolve', (done) ->
+      t = new Thenable
+
+      y1 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'yep-1', ->
+          1
+      y2 = (data) ->
+        th = new Thenable t.decisionTree
+        th.deliver data
+        .then 'yep-2', ->
+          throw new Error 'Foo'
+      y3 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'yep-3', ->
+          3
+
+      n1 = ( data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'nope-1', (path, data) ->
+          e = new Error ""
+          e.data =
+            yeps: data
+            nopes: 1
+          throw e
+      n2 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'nope-2', (path, data) ->
+          e = new Error ""
+          e.data =
+            yeps: data
+            nopes: 2
+          throw e
+      n3 = (data) ->
+        new Thenable t.decisionTree
+        .deliver data
+        .then 'nope-3', (path, data) ->
+          e = new Error ""
+          e.data =
+            yeps: data
+            nopes: 3
+          throw e
+
+      t.tree 'start', ->
+        {}
+      .some [y1, y2, y3]
+      .then 'all-yep', (choice, data) ->
+        chai.expect(data).to.eql [1,3]
+        data
+      .some [n1, n2, n3]
+      .then 'all-nope', ->
+        {}
+      .else 'all-nope-else', (choice, e) ->
+        chai.expect(e.data).to.eql
+          yeps: [1,3]
+          nopes: 3
+        return e.data
+      .always (choice, data) ->
+        cleanPath = t.path.filter (part) -> true unless part in ['else', 'then', 'all', 'some']
+        chai.expect(cleanPath).to.eql ['yep-1', 'yep-3', 'all-yep', 'all-nope-else']
+        chai.expect(data).to.eql
+          yeps: [1,3]
+          nopes: 3
+        done()
+        true
   describe 'with looping thenable feeding the same tree', ->
     it 'should resolve', (done) ->
       max = 3
@@ -149,21 +219,20 @@ describe 'Thenable named promises', ->
     it 'should resolve', (done) ->
       t = new Thenable
       t.tree 'start', (node, data) ->
-        node.branch 'option-1', ->
+        t.branch 'option-1', ->
           {}
         .then 'option-1-sub', ->
           {}
-        node.branch 'option-2', ->
+        t.branch 'option-2', ->
           {}
         .then 'option-2-sub', ->
           {}
-        node.contest (choices) ->
+        t.contest (choices) ->
           return choices[choices.length-1]
-        .deliver(true) # needed?
       .then 'after', ->
         return true
       .always ->
-        
+        console.log t.path
         chai.expect(t.path).to.eql ['start', 'option-2', 'option-2-sub', 'after']
         
         done()
@@ -172,16 +241,15 @@ describe 'Thenable named promises', ->
   
   describe 'with contested dynamic node branching', ->
     it 'should resolve', (done) ->
-      t = new Thenable
+      t = new Thenable null,
         # API method to choose a tied contest
         decideTie: (choices) ->
           return choices[0]
       t.tree 'start', (node, data) ->
         for thing in ['foo','bar','tum']
-          node.branch thing, ->
+          t.branch thing, ->
             {}
-        node.contest() # missing!
-        .deliver(true) # needed?
+      .contest null
       .then 'after', ->
         return true
       .always ->
@@ -262,12 +330,7 @@ describe 'Thenable named promises', ->
         chai.expect(t.path).to.eql ['w-image', 'portrait', 'faces', 'cropping']
         # Current path (if this resolves)
         chai.expect(path).to.eql ['w-image', 'portrait', 'faces', 'cropping', 'always']
-        process.nextTick ->
-          try
-            console.error t.toDOT()
-          catch e
-            console.log e
-          done()
+        done()
         true
 ###
 articleComponent = (ctx, item, promise) ->
