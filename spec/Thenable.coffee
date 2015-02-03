@@ -86,7 +86,38 @@ describe 'Thenable named promises', ->
         done()
         true
       t.deliver 'foo'
-  
+
+  describe 'with looping thenable feeding the same tree', ->
+    it 'should resolve', (done) ->
+      max = 3
+      loops = 0
+      looper = (decisionTree) ->
+        loops++
+        t = new Thenable decisionTree
+        t.then 'one', (choice,data) ->
+          if t.path.indexOf('one') isnt -1
+            throw new Error 'We already did this'
+          {}
+        .else 'two', ->
+          if t.path.indexOf('two') isnt -1
+            throw new Error 'We already did this'
+          {}
+        .else 'three', ->
+          if t.path.indexOf('three') isnt -1
+            throw new Error 'We already did this'
+          {}
+        .then (path, val) ->
+          if loops >= max
+            throw new Error 'all done'
+          looper t.decisionTree
+          {}
+        .else (path, err) ->
+          chai.expect(t.path).to.eql ['one', 'then', 'two', 'then', 'three']
+          console.log t.decisionTree
+          done()
+        t.deliver 'foo'
+      do looper
+
   describe 'with contested static node branching', ->
     it 'should resolve', (done) ->
       t = new Thenable 
