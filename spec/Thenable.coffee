@@ -43,6 +43,110 @@ describe 'Thenable named promises', ->
         done()
         true
       t.deliver 'foo'
+      
+  describe 'with all & return values', ->
+    it 'should resolve', (done) ->
+      t = new Thenable 
+      t.tree 'start', ->
+        {}
+      .then 'yep-1', ->
+        return 1
+      .then 'yep-2', ->
+        return 2
+      .then 'yep-3', ->
+        return 3
+      .all 'all-yep', (choice, data) ->
+        chai.expect(data).to.eql [1,2,3]
+      .then 'nope-1', (choice, data) ->
+        e = new Error ""
+        e.data = 
+          yeps: data
+          nopes: 1
+        throw e
+      .then 'nope-2', ->  
+        e = new Error ""
+        e.data = 2
+        throw e
+      .then 'nope-3', ->
+        e = new Error ""
+        e.data = 3
+        throw e
+      .all 'all-nope', ->
+        {}
+      .else 'all-nope-else', (choice, e) ->
+        chai.expect(e.data).to.eql 
+          yeps: [1,2,3]
+          nopes: 1
+        return e.data
+      .always (choice, data) ->
+        chai.expect(t.path).to.eql ['start', 'yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']        
+        chai.expect(data).to.eql 
+          yeps: [1,2,3]
+          nopes: 1
+        done()
+        true
+      t.deliver 'foo'
+  
+  describe 'with contested static node branching', ->
+    it 'should resolve', (done) ->
+      t = new Thenable 
+      t.tree 'start', (node, data) ->
+        node.branch 'option-1', ->
+          {}
+        .then 'option-1-sub', ->
+          {}
+        node.branch 'option-2', ->
+          {}
+        .then 'option-2-sub', ->
+          {}
+        node.contest (choices) ->
+          return choices[choices.length-1]
+        .deliver(true) # needed?
+      .then 'after', ->
+        return true
+      .always ->
+        
+        chai.expect(t.path).to.eql ['start', 'option-2', 'option-2-sub', 'after']
+        
+        done()
+        true
+      t.deliver 'foo'
+  
+  describe 'with contested dynamic node branching', ->
+    it 'should resolve', (done) ->
+      t = new Thenable 
+        # API method to choose a tied contest
+        decideTie: (choices) ->
+          return choices[0]
+      t.tree 'start', (node, data) ->
+        for thing in ['foo','bar','tum']
+          node.branch thing, ->
+            {}
+        node.contest() # missing!
+        .deliver(true) # needed?
+      .then 'after', ->
+        return true
+      .always ->
+        tree = t.decisionTree        
+        
+        chai.expect(t.path).to.eql ['start', 'foo', 'after']
+        
+        firstChoice = tree.getChoice(t.path[0])
+        
+        # brute method        
+        fromStart = tree.decisions.filter (d) -> d.from is t.getId 'start'
+        fromStartNames = fromStart.map (d) -> d.name
+        chai.expect(fromStart).to.eql ['foo', 'bar', 'tum']
+        fromStartTypes = fromStart.map (d) -> d.type
+        chai.expect(fromStartTypes).to.eql ['fulfilled', 'ignored', 'ignored']
+        
+        # sugar
+        fromStart = tree.decisionNamesAt 'start'
+        chai.expect(fromStart).to.eql ['foo', 'bar', 'tum']
+        
+        done()
+        true
+      t.deliver 'foo'
 
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
