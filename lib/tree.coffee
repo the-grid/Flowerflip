@@ -4,77 +4,99 @@ class Tree
   constructor: (@name) ->
     trees++
     @name = "cluster#{trees}" unless @name
+
+    # Choices indexed by id
     @choices = {}
+    # Name -> id mappings
+    @names = {}
+    # Decisions indexed by source
+    @from = {}
+    # Decisions indexed by destination
+    @to = {}
+    # All decisions in the order registered
     @decisions = []
+
     @path = []
-    @path.push @addChoice 'root',
-      label: 'root'
-      root: true
     @namedPath = []
 
-  getRoot: ->
-    @getChoice 'root'
+  current: ->
+    return 'root' unless @path.length
+    @path[@path.length - 1]
 
-  getChoice: (name) ->
-    @choices[@getId(name)]
-
-  addChoice: (name, attributes = {}) ->
-    id = @getId name
-    id = "#{id}_#{Object.keys(@choices).length}" if @choices[id]
-    @choices[id] =
-      id: id
-      name: name
+  registerDecision: (source, dest, attributes = {}) ->
+    decision =
+      from: source
+      to: dest
+      type: 'pending'
+      data: null
       attributes: attributes
-    id
-
-  registerDecision: (name, type, data, attributes = {}) ->
-    choice = @getChoice name
-    return unless choice
-
-    choice.type = type
-    choice.data = data
-
-    choice.subTree = attributes.subTree
+      subTree: attributes.subTree
     delete attributes.subTree
 
-    if type is 'ignored'
-      choice.previous = @path[@path.length - 2]
-    else
-      choice.previous = @path[@path.length - 1]
+    @decisions.push decision
+    @from[source] = [] unless @from[source]
+    @from[source].push decision
+    @to[dest] = [] unless @to[dest]
+    @to[dest].push decision
+    decision
 
-    attributes.type = type
-    @decisions.push
-      from: choice.previous
-      to: choice.id
-      label: name
-      attributes: attributes
+  removeDecision: (source, dest) ->
+    return unless @from[source]
+    [decision] = @from[source].filter (d) -> d.to is dest
+    return unless decision
+    @from[source].splice @from[source].indexOf(decision), 1
+    @to[dest].splice @to[dest].indexOf(decision), 1
+    @decisions.splice @decisions.indexOf(decision), 1
+    null
 
-  followChoice: (name, data, attributes) ->
-    @registerDecision name, 'fulfilled', data, attributes
-    node = @getChoice name
-    @path.push node.id
-    @namedPath.push node.name if node.name
+  followChoice: (source, dest, data, attributes = {}) ->
+    @registerDecision source, dest unless @to[dest]
+    [decision] = @to[dest].filter (d) -> d.from is source
+    decision = @registerDecision source, dest unless decision
+    decision.type = 'fulfilled'
+    decision.data = data
+    for key, val of attributes
+      continue unless val
+      decision.attributes[key] = val
+    @path.push dest
+    @namedPath.push decision.attributes.name if decision.attributes.name
+    decision
 
-  rejectChoice: (name, data, attributes) ->
-    @registerDecision name, 'rejected', data, attributes
+  rejectChoice: (source, dest, data, attributes = {}) ->
+    @registerDecision source, dest unless @to[dest]
+    [decision] = @to[dest].filter (d) -> d.from is source
+    decision = @registerDecision source, dest unless decision
+    decision.type = 'rejected'
+    decision.data = data
+    for key, val of attributes
+      continue unless val
+      decision.attributes[key] = val
+    decision
 
-  ignoreChoice: (name, attributes) ->
-    @registerDecision name, 'ignored', null, attributes
+  ignoreChoice: (source, dest, attributes = {}) ->
+    @registerDecision source, dest unless @to[dest]
+    [decision] = @to[dest].filter (d) -> d.from is source
+    decision = @registerDecision source, dest unless decision
+    for key, val of attributes
+      continue unless val
+      decision.attributes[key] = val
+    decision.type = 'ignored'
+    decision
 
-  getId: (name) ->
-    return name if @choices[name]
-    "#{@name}_#{name}".replace /-/g, '_'
+  createId: (name) ->
+    unless @names[name]
+      @names[name] = []
+    id = "#{name}_#{@names[name].length}".replace /-/g, '_'
+    @names[name].push id
+    id
 
   toDOT: (type = 'digraph', prefix = '', attributes = {}) ->
     dot = prefix
     dot += "#{type} #{@name} {\n"
     for key, val of attributes
       dot += "#{prefix}  #{key}=#{val};\n"
-    for name, choice of @choices
-      connected = @decisions.filter (edge) ->
-        edge.from is choice.id or edge.to is choice.id
-      continue unless connected.length
 
+    ###
       if choice.subTree
         dot += choice.subTree.toDOT 'subgraph', "#{prefix}  ",
           color: 'lightgrey'
@@ -85,58 +107,26 @@ class Tree
           if edge.from is choice.id
             edge.fromSub = choice.subTree.path[choice.subTree.path.length - 2]
         continue
-
-      dot += "#{prefix}  #{name}"
-
-      choice.attributes.shape = 'box'
-      choice.attributes.label = typeof choice.data
-      choice.attributes.label = '' unless choice.data
-
-      if name is @getId 'root'
-        choice.attributes.shape = 'Mdiamond'
-        choice.attributes.label = ''
-
-      if @decisions[@decisions.length - 1].to is choice.id
-        continue if prefix.length
-        choice.attributes.shape = 'Msquare'
-        choice.attributes.label = ''
-
-
-      switch choice.type
-        when 'ignored'
-          choice.attributes.style = 'dotted'
-          choice.attributes.label = ''
-        when 'rejected'
-          choice.attributes.color = 'red'
-          choice.attributes.fontcolor = 'red'
-          choice.attributes.label = choice.data.message if choice.data?.message
-
-      if Object.keys(choice.attributes).length
-        dot += " ["
-        attribs = []
-
-        for key, val of choice.attributes
-          if typeof val is 'boolean'
-            attribs.push "#{key}=#{val}"
-            continue
-          attribs.push "#{key}=\"#{val}\""
-        dot += attribs.join ','
-        dot += "]"
-      dot += ";\n"
-
+    ###
+    shown = []
     for edge in @decisions
       from = edge.fromSub or edge.from
       to = edge.toSub or edge.to
       dot += "#{prefix}  #{from} -> #{to}"
+      edge.attributes.label = edge.attributes.condition unless edge.attributes.label
+      delete edge.attributes.label unless edge.attributes.label
+      switch edge.type
+        when 'ignored','pending'
+          edge.attributes.style = 'dotted'
+        when 'rejected'
+          edge.attributes.color = 'red'
+          edge.attributes.fontcolor = 'red'
+        when 'fulfilled'
+          edge.attributes.color = 'black'
+          edge.attributes.style = 'solid'
       if Object.keys(edge.attributes).length
         dot += " ["
         attribs = []
-        edge.attributes.label = edge.label unless edge.attributes.label
-        switch edge.attributes.type
-          when 'ignored' then edge.attributes.style = 'dotted'
-          when 'rejected'
-            edge.attributes.color = 'red'
-            edge.attributes.fontcolor = 'red'
         for key, val of edge.attributes
           attribs.push "#{key}=\"#{val}\""
         dot += attribs.join ','

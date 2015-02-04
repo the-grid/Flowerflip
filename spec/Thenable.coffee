@@ -31,15 +31,22 @@ describe 'Thenable named promises', ->
     it 'should resolve', (done) ->
       t = new Thenable
       t.then ->
+        # Executed, failing
         throw new Error 'Error'
       .else ->
+        # Executed
         {}
       .else ->
+        # Ignored
         {}
       .then ->
-        {}
-      .always ->
-        chai.expect(t.path).to.eql ['else', 'then']
+        # Executed
+        'bar'
+      .always (p, d) ->
+        # Executed
+        chai.expect(t.decisionTree.namedPath).to.eql []
+        chai.expect(t.decisionTree.path).to.eql ['else_0', 'then_1']
+        chai.expect(d).to.equal d
         done()
         true
       t.deliver 'foo'
@@ -91,7 +98,6 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 3
           throw e
-
       t.tree 'start', ->
         {}
       .all [y1, y2, y3]
@@ -107,8 +113,7 @@ describe 'Thenable named promises', ->
           nopes: 1
         return e.data
       .always (choice, data) ->
-        cleanPath = t.path.filter (part) -> true unless part in ['else', 'then', 'all']
-        chai.expect(cleanPath).to.eql ['yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']
+        chai.expect(t.namedPath).to.eql ['start', 'yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']
         chai.expect(data).to.eql
           yeps: [1,2,3]
           nopes: 1
@@ -120,23 +125,23 @@ describe 'Thenable named promises', ->
       t = new Thenable
 
       y1 = (data) ->
-        new Thenable t.decisionTree
+        new Thenable()
         .deliver data
         .then 'yep-1', ->
           1
       y2 = (data) ->
-        th = new Thenable t.decisionTree
+        th = new Thenable()
         th.deliver data
         .then 'yep-2', ->
           throw new Error 'Foo'
       y3 = (data) ->
-        new Thenable t.decisionTree
+        new Thenable()
         .deliver data
-        .then 'yep-3', ->
+        .then 'yep-3', (path, data) ->
           3
 
       n1 = ( data) ->
-        new Thenable t.decisionTree
+        new Thenable()
         .deliver data
         .then 'nope-1', (path, data) ->
           e = new Error ""
@@ -145,7 +150,7 @@ describe 'Thenable named promises', ->
             nopes: 1
           throw e
       n2 = (data) ->
-        new Thenable t.decisionTree
+        new Thenable()
         .deliver data
         .then 'nope-2', (path, data) ->
           e = new Error ""
@@ -153,8 +158,10 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 2
           throw e
+        .all 'still nope', (path, data) ->
+          throw new Error ""
       n3 = (data) ->
-        new Thenable t.decisionTree
+        new Thenable()
         .deliver data
         .then 'nope-3', (path, data) ->
           e = new Error ""
@@ -166,24 +173,28 @@ describe 'Thenable named promises', ->
       t.tree 'start', ->
         {}
       .some [y1, y2, y3]
-      .then 'all-yep', (choice, data) ->
+      .then 'some-yep', (choice, data) ->
+        #console.log 'some-yep', choice, data
         chai.expect(data).to.eql [1,3]
         data
+      .else (choice, data) ->
+        #console.log 'some-else', choice, data
+        throw new Error 'foo'
       .some [n1, n2, n3]
-      .then 'all-nope', ->
+      .then 'some-nope', ->
         {}
-      .else 'all-nope-else', (choice, e) ->
+      .else 'some-nope-else', (choice, e) ->
         chai.expect(e.data).to.eql
           yeps: [1,3]
           nopes: 3
         return e.data
       .always (choice, data) ->
-        cleanPath = t.path.filter (part) -> true unless part in ['else', 'then', 'all', 'some']
-        chai.expect(cleanPath).to.eql ['yep-1', 'yep-3', 'all-yep', 'all-nope-else']
-        chai.expect(data).to.eql
-          yeps: [1,3]
-          nopes: 3
-        done()
+        process.nextTick ->
+          chai.expect(t.namedPath).to.eql ['start', 'some-yep', 'some-nope-else']
+          chai.expect(data).to.eql
+            yeps: [1,3]
+            nopes: 3
+          done()
         true
   describe 'with looping thenable feeding the same tree', ->
     it 'should resolve', (done) ->
@@ -193,15 +204,15 @@ describe 'Thenable named promises', ->
         loops++
         t = new Thenable decisionTree
         t.then 'one', (choice,data) ->
-          if t.path.indexOf('one') isnt -1
+          if t.namedPath.indexOf('one') isnt -1
             throw new Error 'We already did this'
           {}
         .else 'two', ->
-          if t.path.indexOf('two') isnt -1
+          if t.namedPath.indexOf('two') isnt -1
             throw new Error 'We already did this'
           {}
         .else 'three', ->
-          if t.path.indexOf('three') isnt -1
+          if t.namedPath.indexOf('three') isnt -1
             throw new Error 'We already did this'
           {}
         .then (path, val) ->
@@ -210,12 +221,12 @@ describe 'Thenable named promises', ->
           looper t.decisionTree
           {}
         .else (path, err) ->
-          chai.expect(t.path).to.eql ['one', 'then', 'two', 'then', 'three']
+          chai.expect(t.namedPath).to.eql ['one', 'two', 'three']
           done()
         t.deliver 'foo'
       do looper
 
-  describe 'with contested static node branching', ->
+  describe.skip 'with contested static node branching', ->
     it 'should resolve', (done) ->
       t = new Thenable
       t.tree 'start', (node, data) ->
@@ -232,14 +243,13 @@ describe 'Thenable named promises', ->
       .then 'after', ->
         return true
       .always ->
-        console.log t.path
         chai.expect(t.path).to.eql ['start', 'option-2', 'option-2-sub', 'after']
         
         done()
         true
       t.deliver 'foo'
   
-  describe 'with contested dynamic node branching', ->
+  describe.skip 'with contested dynamic node branching', ->
     it 'should resolve', (done) ->
       t = new Thenable null,
         # API method to choose a tied contest
