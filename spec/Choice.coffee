@@ -24,7 +24,7 @@ describe 'Choice node API', ->
       providedItem =
         id: 'foo'
       c = new Choice 'hello'
-      c.items.push providedItem
+      c.attributes.items.push providedItem
       item = c.getItem (i) ->
         validated = true if i is providedItem
       chai.expect(item).to.equal providedItem
@@ -35,7 +35,7 @@ describe 'Choice node API', ->
       providedItem =
         id: 'foo'
       c = new Choice 'hello'
-      c.items.push providedItem
+      c.attributes.items.push providedItem
       chai.expect(c.availableItems().length).to.equal 1
       item = c.getItem (i) -> true
       chai.expect(item).to.equal providedItem
@@ -68,7 +68,7 @@ describe 'Choice node API', ->
       providedItem =
         id: 'foo'
       p = new Choice 'hello'
-      p.items.push providedItem
+      p.attributes.items.push providedItem
       validated = false
       c = new Choice p, 'world'
       item = c.getItem (i) ->
@@ -81,7 +81,7 @@ describe 'Choice node API', ->
       providedItem =
         id: 'foo'
       p = new Choice 'hello'
-      p.items.push providedItem
+      p.attributes.items.push providedItem
       c = new Choice p, 'world'
       chai.expect(c.availableItems().length).to.equal 1
       item = c.getItem (i) -> true
@@ -97,7 +97,7 @@ describe 'Choice node API', ->
       providedItem =
         id: 'foo'
       p = new Choice 'hello'
-      p.items.push providedItem
+      p.attributes.items.push providedItem
       c = new Choice p, 'world'
       chai.expect(c.availableItems().length).to.equal 1
       item = c.getItem (i) -> true
