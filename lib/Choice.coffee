@@ -100,7 +100,7 @@ class Choice
   toJSON: ->
     base =
       id: @id
-      path: @path
+      path: @path.slice 0
 
     for key, val of @attributes
       if typeof val.slice is 'function'
