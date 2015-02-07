@@ -158,27 +158,58 @@ describe 'Choice node API', ->
 
       c.branch 'bar'
 
-    it 'should allow branches to diverge', (done) ->
-      c = new Choice 'foo'
+    it 'should throw error on operations on original after branching off', (done) ->
+      orig = new Choice 'foo'
       one =
         id: 'one'
       two =
         id: 'two'
 
-      c.attributes.items.push one
-      c.attributes.items.push two
+      orig.attributes.items.push one
+      orig.attributes.items.push two
 
-      c.onBranch = (original, branch, callback) ->
+      orig.onBranch = (original, branch, callback) ->
         callback branch
 
-      b = c.branch 'bar', (branch) ->
+      b = orig.branch 'bar', (branch) ->
         branch.eatItem branch.getItem (i) ->
           chai.expect(i.id).to.equal 'two'
 
-      c.eatItem c.getItem (i) -> chai.expect(i.id).to.equal 'one'
+      fail = ->
+        orig.eatItem orig.getItem (i) ->
+      chai.expect(fail).to.throw Error
 
+      try
+        orig.getItem()
+      catch e
+        chai.expect(e.message).to.equal 'Choice foo is no longer active'
+
+      done()
+
+    it 'should allow branches to diverge', (done) ->
+      orig = new Choice 'foo'
+      one =
+        id: 'one'
+      two =
+        id: 'two'
+
+      orig.attributes.items.push one
+      orig.attributes.items.push two
+
+      orig.onBranch = (original, branch, callback) ->
+        callback branch
+
+      c = orig.branch 'foo', (branch) ->
+        branch.eatItem branch.getItem (i) ->
+          chai.expect(i.id).to.equal 'one'
+      b = orig.branch 'bar', (branch) ->
+        branch.eatItem branch.getItem (i) ->
+          chai.expect(i.id).to.equal 'two'
+
+      chai.expect(c.toString()).to.equal 'foo'
       chai.expect(c.availableItems()).to.eql [two]
       chai.expect(c.attributes.itemsEaten).to.eql [one]
+      chai.expect(b.toString()).to.equal 'bar'
       chai.expect(b.availableItems()).to.eql [one]
       chai.expect(b.attributes.itemsEaten).to.eql [two]
 

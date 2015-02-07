@@ -1,3 +1,5 @@
+{State, ensureActive} = require './state'
+
 class Choice
   constructor: (source, id) ->
     unless id
@@ -8,7 +10,9 @@ class Choice
 
     @id = id
     @source = source
+    @state = 0
     @onBranch = null
+    @state = State.PENDING
 
     @path = if @source then @source.path.slice(0) else []
     @path.push id
@@ -27,11 +31,14 @@ class Choice
       continue if key in ['path', 'id']
       branch.attributes[key] = val
 
+    @state = State.ABORTED
+
     @onBranch @, branch, callback
 
     branch
 
   getItem: (callback) ->
+    ensureActive @
     items = @availableItems()
     return null unless items.length
 
@@ -47,6 +54,7 @@ class Choice
     null
 
   eatItem: (item, node = null) ->
+    ensureActive @
     throw new Error 'No item provided' unless item
     @attributes.itemsEaten.push item
 
@@ -63,6 +71,7 @@ class Choice
       @attributes.itemsEaten.indexOf(i) is -1
 
   getBlock: (item, callback) ->
+    ensureActive @
     return null unless item.content?.length
     blocks = @availableBlocks item
     return null unless blocks.length
@@ -79,6 +88,7 @@ class Choice
     null
 
   eatBlock: (block, node = null) ->
+    ensureActive @
     @attributes.blocksEaten.push block
     # TODO: Auto-mark item as eaten when all necessary blocks are consumed
 

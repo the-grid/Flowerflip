@@ -1,9 +1,6 @@
 Tree = require './tree'
 
-State =
-  PENDING: 0
-  FULFILLED: 1
-  REJECTED: 2
+{State} = require './state'
 
 PositiveResults = [
   'then'
