@@ -76,3 +76,18 @@ describe 'Choice node API', ->
       nextItem = c.getItem (i) -> true
       chai.expect(nextItem).to.be.a 'null'
       done()
+
+    it 'should have the item available in the parent node after eating in child', (done) ->
+      providedItem =
+        id: 'foo'
+      p = new Choice
+      p.items.push providedItem
+      c = new Choice p
+      chai.expect(c.availableItems().length).to.equal 1
+      item = c.getItem (i) -> true
+      chai.expect(item).to.equal providedItem
+
+      c.eatItem item
+      chai.expect(c.availableItems().length).to.equal 0
+      chai.expect(p.availableItems().length).to.equal 1
+      done()
