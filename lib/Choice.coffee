@@ -1,8 +1,18 @@
 class Choice
-  constructor: (@source) ->
+  constructor: (source, id) ->
+    unless id
+      id = source
+      source = null
+    unless id
+      throw new Exception 'Choice ID required'
+    @id = id
+    @source = source
     @items = []
     @itemsEaten = []
     @blocksEaten = []
+
+    @path = if @source then @source.path.slice(0) else []
+    @path.push id
 
   getItem: (callback) ->
     items = @availableItems()

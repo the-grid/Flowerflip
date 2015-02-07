@@ -3,9 +3,17 @@ Choice = require '../lib/Choice'
 
 describe 'Choice node API', ->
   describe 'with no parents', ->
+    it 'should not allow instantiating without an ID', ->
+      inst = ->
+        c = new Choice
+      chai.expect(inst).to.throw Error
+    it 'should contain itself in the path', ->
+      c = new Choice 'hello'
+      chai.expect(c.path).to.eql ['hello']
+      chai.expect(c.source).to.be.a 'null'
     it 'should not provide items if it has not been initialized with any', (done) ->
       validated = false
-      c = new Choice
+      c = new Choice 'hello'
       item = c.getItem (i) -> validated = true
       chai.expect(item).to.be.a 'null'
       chai.expect(validated).to.equal false
@@ -15,7 +23,7 @@ describe 'Choice node API', ->
       validated = false
       providedItem =
         id: 'foo'
-      c = new Choice
+      c = new Choice 'hello'
       c.items.push providedItem
       item = c.getItem (i) ->
         validated = true if i is providedItem
@@ -26,7 +34,7 @@ describe 'Choice node API', ->
     it 'should not return an item once it has been eaten', (done) ->
       providedItem =
         id: 'foo'
-      c = new Choice
+      c = new Choice 'hello'
       c.items.push providedItem
       chai.expect(c.availableItems().length).to.equal 1
       item = c.getItem (i) -> true
@@ -39,10 +47,18 @@ describe 'Choice node API', ->
       done()
 
   describe 'with a parent', ->
+    it 'should contain the parent in its path', ->
+      p = new Choice 'hello'
+      c = new Choice p, 'world'
+      chai.expect(c.path).to.eql ['hello', 'world']
+    it 'should not have mutated the source path', ->
+      p = new Choice 'hello'
+      c = new Choice p, 'world'
+      chai.expect(p.path).to.eql ['hello']
     it 'should not provide items if it has not been initialized with any', (done) ->
       validated = false
-      p = new Choice
-      c = new Choice p
+      p = new Choice 'hello'
+      c = new Choice p, 'world'
       item = c.getItem (i) -> validated = true
       chai.expect(item).to.be.a 'null'
       chai.expect(validated).to.equal false
@@ -51,10 +67,10 @@ describe 'Choice node API', ->
     it 'should call validation callback for the item in array', (done) ->
       providedItem =
         id: 'foo'
-      p = new Choice
+      p = new Choice 'hello'
       p.items.push providedItem
       validated = false
-      c = new Choice p
+      c = new Choice p, 'world'
       item = c.getItem (i) ->
         validated = true if i is providedItem
       chai.expect(item).to.equal providedItem
@@ -64,9 +80,9 @@ describe 'Choice node API', ->
     it 'should not return an item once it has been eaten', (done) ->
       providedItem =
         id: 'foo'
-      p = new Choice
+      p = new Choice 'hello'
       p.items.push providedItem
-      c = new Choice p
+      c = new Choice p, 'world'
       chai.expect(c.availableItems().length).to.equal 1
       item = c.getItem (i) -> true
       chai.expect(item).to.equal providedItem
@@ -80,9 +96,9 @@ describe 'Choice node API', ->
     it 'should have the item available in the parent node after eating in child', (done) ->
       providedItem =
         id: 'foo'
-      p = new Choice
+      p = new Choice 'hello'
       p.items.push providedItem
-      c = new Choice p
+      c = new Choice p, 'world'
       chai.expect(c.availableItems().length).to.equal 1
       item = c.getItem (i) -> true
       chai.expect(item).to.equal providedItem
