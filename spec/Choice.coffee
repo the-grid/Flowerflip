@@ -11,6 +11,9 @@ describe 'Choice node API', ->
       c = new Choice 'hello'
       chai.expect(c.path).to.eql ['hello']
       chai.expect(c.source).to.be.a 'null'
+    it 'should contain full path in its toString', ->
+      c = new Choice 'world'
+      chai.expect('' + c).to.equal 'world'
     it 'should not provide items if it has not been initialized with any', (done) ->
       validated = false
       c = new Choice 'hello'
@@ -51,6 +54,11 @@ describe 'Choice node API', ->
       p = new Choice 'hello'
       c = new Choice p, 'world'
       chai.expect(c.path).to.eql ['hello', 'world']
+
+    it 'should contain full path in its toString', ->
+      p = new Choice 'hello'
+      c = new Choice p, 'world'
+      chai.expect('' + c).to.equal 'hello-world'
     it 'should not have mutated the source path', ->
       p = new Choice 'hello'
       c = new Choice p, 'world'
@@ -99,6 +107,7 @@ describe 'Choice node API', ->
       p = new Choice 'hello'
       p.attributes.items.push providedItem
       c = new Choice p, 'world'
+
       chai.expect(c.availableItems().length).to.equal 1
       item = c.getItem (i) -> true
       chai.expect(item).to.equal providedItem
@@ -106,4 +115,71 @@ describe 'Choice node API', ->
       c.eatItem item
       chai.expect(c.availableItems().length).to.equal 0
       chai.expect(p.availableItems().length).to.equal 1
+      done()
+
+  describe 'branching', ->
+    it 'should throw exception if there are no subscribers', ->
+      c = new Choice 'foo'
+      inst = ->
+        c.branch 'bar'
+      chai.expect(inst).to.throw Error
+
+    it 'should call the onBranch callback', (done) ->
+      c = new Choice 'foo'
+      c.onBranch = (original, branch, callback) ->
+        chai.expect(original).to.equal c
+        chai.expect(original.path).to.eql ['foo']
+        chai.expect(original.id).to.equal 'foo'
+        chai.expect(branch.path).to.eql ['bar']
+        chai.expect(branch.id).to.equal 'bar'
+        chai.expect(callback).to.be.a 'function'
+        done()
+      c.branch 'bar'
+
+    it 'should contain the eaten item of the original', (done) ->
+      c = new Choice 'foo'
+      providedItem =
+        id: 'foo'
+      c.attributes.items.push providedItem
+
+      c.onBranch = (original, branch, callback) ->
+        # We should have the same data in both
+        chai.expect(original.availableItems()).to.eql []
+        chai.expect(original.attributes.itemsEaten).to.eql [providedItem]
+        chai.expect(branch.availableItems()).to.eql []
+        chai.expect(branch.attributes.itemsEaten).to.eql [providedItem]
+
+        # Ensure these have been cloned
+        chai.expect(branch.attributes.items).to.not.equal original.attributes.items
+        chai.expect(branch.attributes.itemsEaten).to.not.equal original.attributes.itemsEaten
+        done()
+
+      c.eatItem c.getItem()
+
+      c.branch 'bar'
+
+    it 'should allow branches to diverge', (done) ->
+      c = new Choice 'foo'
+      one =
+        id: 'one'
+      two =
+        id: 'two'
+
+      c.attributes.items.push one
+      c.attributes.items.push two
+
+      c.onBranch = (original, branch, callback) ->
+        callback branch
+
+      b = c.branch 'bar', (branch) ->
+        branch.eatItem branch.getItem (i) ->
+          chai.expect(i.id).to.equal 'two'
+
+      c.eatItem c.getItem (i) -> chai.expect(i.id).to.equal 'one'
+
+      chai.expect(c.availableItems()).to.eql [two]
+      chai.expect(c.attributes.itemsEaten).to.eql [one]
+      chai.expect(b.availableItems()).to.eql [one]
+      chai.expect(b.attributes.itemsEaten).to.eql [two]
+
       done()

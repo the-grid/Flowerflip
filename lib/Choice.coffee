@@ -6,9 +6,9 @@ class Choice
     unless id
       throw new Exception 'Choice ID required'
 
-
     @id = id
     @source = source
+    @onBranch = null
 
     @path = if @source then @source.path.slice(0) else []
     @path.push id
@@ -18,9 +18,26 @@ class Choice
       itemsEaten: []
       blocksEaten: []
 
+  branch: (id, callback = ->) ->
+    unless typeof @onBranch is 'function'
+      throw new Error 'Cannot branch without external onBranch'
+    branch = new Choice @source, id
+    clone = @toJSON()
+    for key, val of clone
+      continue if key in ['path', 'id']
+      branch.attributes[key] = val
+
+    @onBranch @, branch, callback
+
+    branch
+
   getItem: (callback) ->
     items = @availableItems()
     return null unless items.length
+
+    unless typeof callback is 'function'
+      return items[0]
+
     for item in items
       try
         callback item
@@ -30,6 +47,7 @@ class Choice
     null
 
   eatItem: (item, node = null) ->
+    throw new Error 'No item provided' unless item
     @attributes.itemsEaten.push item
 
   availableItems: ->
@@ -45,8 +63,13 @@ class Choice
       @attributes.itemsEaten.indexOf(i) is -1
 
   getBlock: (item, callback) ->
+    return null unless item.content?.length
     blocks = @availableBlocks item
     return null unless blocks.length
+
+    unless typeof callback is 'function'
+      return blocks[0]
+
     for block in blocks
       try
         callback block
@@ -76,5 +99,7 @@ class Choice
       base[key] = val
 
     base
+
+  toString: -> @path.join '-'
 
 module.exports = Choice
