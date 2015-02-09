@@ -51,8 +51,6 @@ class Choice
 
     branch
 
-  contest: ->
-
   get: (name) ->
     return @attributes[name] if @attributes[name] isnt 'undefined'
     return null unless @source
