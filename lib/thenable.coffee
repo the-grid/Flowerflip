@@ -50,49 +50,48 @@ class Thenable
       tasks = name
       name = null
 
-    composite = new Thenable @tree
-    composite.type = 'some'
-    composite.id = @tree.createId(name or 'some')
-    composite.parent = @parent
-
-    fulfilled = []
-    rejected = []
-    tasks.forEach (t, i) =>
-      tName = t.name or "some#{i}"
-      tId = @tree.createId tName
-      onFulfilled = (path, data) =>
-        @tree.registerDecision @parent.id, tId,
-          condition: 'then'
-          name: t.name
-        @tree.registerDecision tId, composite.id,
-          condition: 'some'
-        @tree.removeDecision @parent.id, composite.id
-        @tree.followChoice @parent.id, tId
-        val = t data
-        if val and typeof val.then is 'function' and typeof val.else is 'function'
-          val.then (p, d) =>
-            fulfilled.push d
-            @tree.followChoice tId, composite.id, d
+    callback = (choice, data) ->
+      composite = new Thenable
+      composite.tree.id = 'COMPOSITE-SOME'
+      fulfilled = []
+      rejected = []
+      tasks.forEach (t, i) ->
+        return if rejected.length
+        process.nextTick ->
+          try
+            val = t data
+            if val and typeof val.then is 'function' and typeof val.else is 'function'
+              val.then (p, d) ->
+                fulfilled.push d
+                return unless fulfilled.length + rejected.length is tasks.length
+                composite.deliver fulfilled
+                null
+              val.else (p, e) ->
+                rejected.push e
+                return unless fulfilled.length + rejected.length is tasks.length
+                if rejected.length is tasks.length
+                  composite.reject e
+                else
+                  composite.deliver fulfilled
+                e
+              return
+            fulfilled.push val
             return unless fulfilled.length + rejected.length is tasks.length
             composite.deliver fulfilled
-            d
-          val.else (p, e) =>
+          catch e
             rejected.push e
-            @tree.rejectChoice tId, composite.id, e
             return unless fulfilled.length + rejected.length is tasks.length
             if rejected.length is tasks.length
-              composite.reject e if composite.state is State.PENDING
+              composite.reject e
             else
               composite.deliver fulfilled
-            e
-        val
-      @async =>
-        @subscribers.push
-          name: name
-          fulfilled: onFulfilled
-        do @resolve
+      composite
+    id = @tree.registerNode @id, name, 'some', callback
+    promise = new Thenable @tree
+    promise.id = id
 
-    composite
+    @tree.resolve @id
+    promise
 
   then: (name, onFulfilled) ->
     if typeof name is 'function'

@@ -144,7 +144,7 @@ describe 'Thenable named promises', ->
         .then 'yep-3', (path, data) ->
           3
 
-      n1 = ( data) ->
+      n1 = (data) ->
         new Thenable()
         .deliver data
         .then 'nope-1', (path, data) ->
@@ -162,8 +162,8 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 2
           throw e
-        .all 'still nope', (path, data) ->
-          throw new Error ""
+        .always 'still nope', (path, data) ->
+          throw new Error "all"
       n3 = (data) ->
         new Thenable()
         .deliver data
@@ -174,8 +174,7 @@ describe 'Thenable named promises', ->
             nopes: 3
           throw e
 
-      t.tree 'start', ->
-        {}
+      t.deliver {}
       .some [y1, y2, y3]
       .then 'some-yep', (choice, data) ->
         chai.expect(data).to.eql [1,3]
@@ -192,7 +191,7 @@ describe 'Thenable named promises', ->
         return e.data
       .always (choice, data) ->
         process.nextTick ->
-          chai.expect(t.namedPath).to.eql ['start', 'some-yep', 'some-nope-else']
+          chai.expect(choice.namedPath()).to.eql ['some-yep', 'some-nope-else']
           chai.expect(data).to.eql
             yeps: [1,3]
             nopes: 3
