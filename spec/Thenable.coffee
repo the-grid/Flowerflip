@@ -197,49 +197,20 @@ describe 'Thenable named promises', ->
             nopes: 3
           done()
         true
-  describe 'with looping thenable feeding the same tree', ->
-    it 'should resolve', (done) ->
-      max = 3
-      loops = 0
-      looper = (decisionTree) ->
-        loops++
-        t = new Thenable decisionTree
-        t.then 'one', (choice,data) ->
-          if t.namedPath.indexOf('one') isnt -1
-            throw new Error 'We already did this'
-          {}
-        .else 'two', ->
-          if t.namedPath.indexOf('two') isnt -1
-            throw new Error 'We already did this'
-          {}
-        .else 'three', ->
-          if t.namedPath.indexOf('three') isnt -1
-            throw new Error 'We already did this'
-          {}
-        .then (path, val) ->
-          if loops >= max
-            throw new Error 'all done'
-          looper t.decisionTree
-          {}
-        .else (path, err) ->
-          chai.expect(t.namedPath).to.eql ['one', 'two', 'three']
-          done()
-        t.deliver 'foo'
-      do looper
 
   describe.skip 'with contested static node branching', ->
     it 'should resolve', (done) ->
       t = new Thenable
-      t.tree 'start', (node, data) ->
-        t.branch 'option-1', ->
+      t.then 'start', (node, data) ->
+        node.branch 'option-1', ->
           {}
         .then 'option-1-sub', ->
           {}
-        t.branch 'option-2', ->
+        node.branch 'option-2', ->
           {}
         .then 'option-2-sub', ->
           {}
-        t.contest (choices) ->
+        node.contest (choices) ->
           return choices[choices.length-1]
       .then 'after', ->
         return true
@@ -288,8 +259,7 @@ describe 'Thenable named promises', ->
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
       t = new Thenable
-      t.tree ->
-        true
+      t.deliver true
       .then 'w-image', ->
         return {}
       .else 'wo-image', ->
@@ -304,16 +274,13 @@ describe 'Thenable named promises', ->
         throw new Error 'Too small'
       .else 'small', ->
         return {}
-      .always (path, val) ->
+      .always (choice, val) ->
         # The real resolved path (always hasn't resolved yet)
-        chai.expect(t.path).to.eql ['w-image', 'portrait', 'small']
-        # Current path (if this resolves)
-        chai.expect(path).to.eql ['w-image', 'portrait', 'small', 'always']
+        chai.expect(choice.namedPath()).to.eql ['w-image', 'portrait', 'small']
         done()
     it 'should produce the expected path also when there are sub-trees', (done) ->
       t = new Thenable
-      t.tree ->
-        true
+      t.deliver true
       .then 'w-image', ->
         return {}
       .else 'wo-image', ->
@@ -324,9 +291,10 @@ describe 'Thenable named promises', ->
         return {}
       .else 'square', ->
         throw new Error 'Not square'
-      .then 'faces', ->
+      .then 'faces', (choice, data) ->
         t2 = new Thenable
-        t2.tree 'face-detection', ->
+        t2.deliver data
+        t2.then 'face-detection', ->
           {}
         .then 'match-people', ->
           {}
@@ -334,13 +302,11 @@ describe 'Thenable named promises', ->
           throw new Error 'Trying hard'
         .else 'no-friends', (path, faces) ->
           {}
-      .then 'cropping', ->
+      .always 'cropping', ->
         {}
-      .always (path, val) ->
+      .always (choice, val) ->
         # The real resolved path (always hasn't resolved yet)
-        chai.expect(t.path).to.eql ['w-image', 'portrait', 'faces', 'cropping']
-        # Current path (if this resolves)
-        chai.expect(path).to.eql ['w-image', 'portrait', 'faces', 'cropping', 'always']
+        chai.expect(choice.namedPath()).to.eql ['w-image', 'portrait', 'faces', 'cropping']
         done()
         true
 ###

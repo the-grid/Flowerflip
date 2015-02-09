@@ -42,7 +42,6 @@ class Thenable
     promise = new Thenable @tree
     promise.id = id
 
-    @tree.resolve @id
     promise
 
   some: (name, tasks) ->
@@ -90,7 +89,6 @@ class Thenable
     promise = new Thenable @tree
     promise.id = id
 
-    @tree.resolve @id
     promise
 
   then: (name, onFulfilled) ->
@@ -101,7 +99,6 @@ class Thenable
     id = @tree.registerNode @id, name, 'then', onFulfilled
     promise = new Thenable @tree
     promise.id = id
-    @tree.resolve @id
     promise
 
   else: (name, onRejected) ->
@@ -112,7 +109,6 @@ class Thenable
     id = @tree.registerNode @id, name, 'else', onRejected
     promise = new Thenable @tree
     promise.id = id
-    @tree.resolve @id
     promise
 
   always: (name, onAlways) ->
@@ -123,7 +119,6 @@ class Thenable
     id = @tree.registerNode @id, name, 'always', onAlways
     promise = new Thenable @tree
     promise.id = id
-    @tree.resolve @id
     promise
 
   changeState: (state, value) ->
@@ -135,7 +130,6 @@ class Thenable
     return unless node.choice
     node.choice.set 'data', value
     node.choice.state = state
-    @tree.resolve @id
 
   deliver: (value) ->
     @changeState State.FULFILLED, value

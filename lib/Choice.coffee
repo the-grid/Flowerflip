@@ -80,6 +80,7 @@ class Choice
     ensureActive @
     throw new Error 'No item provided' unless item
     @attributes.itemsEaten.push item
+    item
 
   availableItems: ->
     # Get original list of nodes
@@ -114,6 +115,7 @@ class Choice
     ensureActive @
     @attributes.blocksEaten.push block
     # TODO: Auto-mark item as eaten when all necessary blocks are consumed
+    block
 
   availableBlocks: (item) ->
     blocks = if @source then @source.availableBlocks(item) else item.content

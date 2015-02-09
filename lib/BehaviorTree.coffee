@@ -135,6 +135,7 @@ class BehaviorTree
       #break if source.type is 'root' and choice.type is 'else'
       source.destinations.push choice
       choice.sources.push source
+      @resolve source.id
       break if source.type is 'root'
       if choice.type is 'all' and source.type in PositiveResults
         break
