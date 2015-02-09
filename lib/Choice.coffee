@@ -1,7 +1,7 @@
 {State, ensureActive} = require './state'
 
 class Choice
-  constructor: (source, id) ->
+  constructor: (source, id, @name) ->
     unless id
       id = source
       source = null
@@ -22,6 +22,18 @@ class Choice
       itemsEaten: []
       blocksEaten: []
 
+  namedPath: ->
+    return [] if @id is 'root'
+    path = if @source then @source.namedPath() else []
+    path.push @name if @name and @state is State.FULFILLED
+    path
+
+  fulfilledPath: ->
+    return [] if @id is 'root'
+    path = if @source then @source.fulfilledPath() else []
+    path.push @id if @state is State.FULFILLED
+    path
+
   branch: (id, callback = ->) ->
     unless typeof @onBranch is 'function'
       throw new Error 'Cannot branch without external onBranch'
@@ -38,7 +50,6 @@ class Choice
     branch
 
   get: (name) ->
-    ensureActive @
     return @attributes[name] if @attributes[name] isnt 'undefined'
     return null unless @source
     @source.get name

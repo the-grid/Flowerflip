@@ -5,27 +5,29 @@ describe 'Thenable named promises', ->
   describe 'on resolved promise', ->
     it 'should call the "then" callback defined before delivery', (done) ->
       t = new Thenable
-      t.then 'foo', (path, val) ->
+      t.then 'foo', (choice, val) ->
         chai.expect(val).to.equal 'bar'
-        chai.expect(path).to.eql ['foo']
+        chai.expect(choice.path).to.eql ['root', 'foo']
         done()
       t.deliver 'bar'
     it 'should call the "then" callback defined after delivery', (done) ->
       t = new Thenable
       t.deliver 'bar'
-      t.then 'baz', (path, val) ->
+      t.then 'baz', (choice, val) ->
         chai.expect(val).to.equal 'bar'
-        chai.expect(path).to.eql ['baz']
+        chai.expect(choice.path).to.eql ['root', 'baz']
         done()
   describe 'on failed promise', ->
     it 'should call the "else" callback', (done) ->
       t = new Thenable
-      t.then 'foo', (path, val) ->
+      t.then 'foo', (choice, val) ->
         throw new Error 'Failboat'
-      .else 'bar', (path, e) ->
-        chai.expect(path).to.eql ['bar']
+      .else 'bar', (choice, e) ->
+        chai.expect(choice.path).to.eql ['root', 'foo', 'bar']
         chai.expect(e.message).to.equal 'Failboat'
-        done()
+        process.nextTick ->
+          chai.expect(choice.namedPath()).to.eql ['bar']
+          done()
       t.deliver 'Hello'
   describe 'with anonymous thenable', ->
     it 'should resolve', (done) ->
@@ -42,10 +44,11 @@ describe 'Thenable named promises', ->
       .then ->
         # Executed
         'bar'
-      .always (p, d) ->
+      .always (choice, d) ->
         # Executed
-        chai.expect(t.decisionTree.namedPath).to.eql []
-        chai.expect(t.decisionTree.path).to.eql ['else_0', 'then_1']
+        chai.expect(choice.namedPath()).to.eql []
+        chai.expect(choice.fulfilledPath()).to.eql ['else', 'then_1']
+        chai.expect(choice.path).to.eql ['root', 'then', 'else', 'then_1', 'always']
         chai.expect(d).to.equal d
         done()
         true
@@ -98,8 +101,7 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 3
           throw e
-      t.tree 'start', ->
-        {}
+      t.deliver {}
       .all [y1, y2, y3]
       .then 'all-yep', (choice, data) ->
         chai.expect(data).to.eql [1,2,3]

@@ -13,30 +13,36 @@ describe 'Behavior Tree API', ->
       chai.expect(id).to.equal 'foo_bar'
     it 'should return sequenced for duplicates', ->
       tree = new BehaviorTree
-      tree.choices['foo'] = {}
+      tree.nodes['foo'] = {}
       id = tree.createId 'foo'
       chai.expect(id).to.equal 'foo_1'
-      tree.choices[id] = {}
+      tree.nodes[id] = {}
       id = tree.createId 'foo'
       chai.expect(id).to.equal 'foo_2'
-      tree.choices[id] = {}
+      tree.nodes[id] = {}
       id = tree.createId 'foo'
       chai.expect(id).to.equal 'foo_3'
 
-  describe 'registering choices', ->
+  describe 'registering nodes', ->
+    it 'should return the ID', ->
+      tree = new BehaviorTree
+      id = tree.registerNode 'root', 'then', 'then', ->
+      chai.expect(id).to.equal 'then'
+      id = tree.registerNode 'root', 'then', 'then', ->
+      chai.expect(id).to.equal 'then_1'
     it 'should register a then as a possible destination to both previous then and else', ->
       tree = new BehaviorTree
-      tree.registerChoice 'root', 'foo', 'then', ->
-      tree.registerChoice 'foo', 'bar', 'else', ->
-      tree.registerChoice 'bar', 'baz', 'then', ->
-      chai.expect(tree.choices).to.have.keys ['root', 'foo', 'bar', 'baz']
-      chai.expect(tree.choices.root.destinations).to.be.an 'array'
-      chai.expect(tree.choices.root.destinations.length).to.equal 1
-      chai.expect(tree.choices.root.destinations[0].name).to.equal 'foo'
-      chai.expect(tree.choices.foo.destinations.length).to.equal 2
-      chai.expect(tree.choices.foo.destinations[0].name).to.equal 'bar'
-      chai.expect(tree.choices.foo.destinations[1].name).to.equal 'baz'
-      chai.expect(tree.choices.bar.destinations.length).to.equal 1
-      chai.expect(tree.choices.bar.destinations[0].name).to.equal 'baz'
-      chai.expect(tree.choices.baz.destinations.length).to.equal 0
-      chai.expect(tree.choices.baz.sources.length).to.equal 2
+      tree.registerNode 'root', 'foo', 'then', ->
+      tree.registerNode 'foo', 'bar', 'else', ->
+      tree.registerNode 'bar', 'baz', 'then', ->
+      chai.expect(tree.nodes).to.have.keys ['root', 'foo', 'bar', 'baz']
+      chai.expect(tree.nodes.root.destinations).to.be.an 'array'
+      chai.expect(tree.nodes.root.destinations.length).to.equal 1
+      chai.expect(tree.nodes.root.destinations[0].name).to.equal 'foo'
+      chai.expect(tree.nodes.foo.destinations.length).to.equal 2
+      chai.expect(tree.nodes.foo.destinations[0].name).to.equal 'bar'
+      chai.expect(tree.nodes.foo.destinations[1].name).to.equal 'baz'
+      chai.expect(tree.nodes.bar.destinations.length).to.equal 1
+      chai.expect(tree.nodes.bar.destinations[0].name).to.equal 'baz'
+      chai.expect(tree.nodes.baz.destinations.length).to.equal 0
+      chai.expect(tree.nodes.baz.sources.length).to.equal 2
