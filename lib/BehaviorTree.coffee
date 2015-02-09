@@ -25,6 +25,15 @@ class BehaviorTree
         sources: []
         destinations: []
 
+  onBranch: (orig, branch, callback) =>
+    originalNode = @nodes[orig.id]
+    unless originalNode
+      throw new Error "Source node #{orig.id} not found"
+    id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback
+    @nodes[id].choice = branch
+    @nodes[id].destinations = originalNode.destinations.slice 0
+    @resolve id
+
   createId: (name, seq = 0) ->
     id = name.replace /-/g, '_'
     unless @nodes[id]
@@ -69,9 +78,11 @@ class BehaviorTree
     unless typeof node.callback is 'function'
       throw new Error "Node #{id} is not executable"
     choice = new Choice sourceChoice, id, node.name
+    choice.onBranch = @onBranch
     node.choice = choice
     try
       val = node.callback choice, data
+      return if choice.state is State.ABORTED
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         # Thenable returned, make subtree
         node.subtree = val.tree
@@ -89,8 +100,9 @@ class BehaviorTree
       choice.state = State.FULFILLED
       @resolve node.id
     catch e
-      e.stack
       # Rejected
+      if choice.state is State.ABORTED
+        return
       choice.set 'data', e
       choice.state = State.REJECTED
       @resolve node.id
@@ -110,7 +122,7 @@ class BehaviorTree
   execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
     choice = new Choice node.id
-    unless toString.call(data) is '[object Array]'
+    if typeof data is 'object' and toString.call(data) isnt '[object Array]'
       for key, val of data
         choice.set key, val
     choice.set 'data', data

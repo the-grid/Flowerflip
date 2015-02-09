@@ -204,20 +204,17 @@ describe 'Thenable named promises', ->
       t.then 'start', (node, data) ->
         node.branch 'option-1', ->
           {}
-        .then 'option-1-sub', ->
-          {}
         node.branch 'option-2', ->
           {}
-        .then 'option-2-sub', ->
-          {}
-        node.contest (choices) ->
-          return choices[choices.length-1]
-      .then 'after', ->
+        true
+      .contest (choices) ->
+        return choices[choices.length-1]
+      .then 'after', (choice) ->
         return true
-      .always ->
-        chai.expect(t.path).to.eql ['start', 'option-2', 'option-2-sub', 'after']
-        
-        done()
+      .then (choice, val) ->
+        process.nextTick ->
+          chai.expect(choice.namedPath()).to.eql ['option-2', 'option-2-sub', 'after']
+          done()
         true
       t.deliver 'foo'
   
@@ -227,7 +224,8 @@ describe 'Thenable named promises', ->
         # API method to choose a tied contest
         decideTie: (choices) ->
           return choices[0]
-      t.tree 'start', (node, data) ->
+      t.deliver 'foo'
+      t.then 'start', (node, data) ->
         for thing in ['foo','bar','tum']
           t.branch thing, ->
             {}
@@ -235,8 +233,6 @@ describe 'Thenable named promises', ->
       .then 'after', ->
         return true
       .always ->
-        tree = t.decisionTree
-        
         chai.expect(t.path).to.eql ['start', 'foo', 'after']
         
         firstChoice = tree.getChoice(t.path[0])

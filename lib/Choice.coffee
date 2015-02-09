@@ -34,10 +34,12 @@ class Choice
     path.push @id if @state is State.FULFILLED
     path
 
-  branch: (id, callback = ->) ->
+  branch: (name, callback = ->) ->
     unless typeof @onBranch is 'function'
       throw new Error 'Cannot branch without external onBranch'
-    branch = new Choice @source, id
+    id = name.replace /-/g, '_'
+    branch = new Choice @source, id, name
+    branch.state = State.PENDING
     clone = @toJSON()
     for key, val of clone
       continue if key in ['path', 'id']
@@ -48,6 +50,8 @@ class Choice
     @onBranch @, branch, callback
 
     branch
+
+  contest: ->
 
   get: (name) ->
     return @attributes[name] if @attributes[name] isnt 'undefined'
