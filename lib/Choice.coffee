@@ -37,6 +37,18 @@ class Choice
 
     branch
 
+  get: (name) ->
+    ensureActive @
+    return @attributes[name] if @attributes[name] isnt 'undefined'
+    return null unless @source
+    @source.get name
+
+  set: (name, value) ->
+    ensureActive @
+    if name in ['itemsEaten', 'blocksEaten']
+      throw new Error "#{name} attribute must be modified via the eat method"
+    @attributes[name] = value
+
   getItem: (callback) ->
     ensureActive @
     items = @availableItems()
