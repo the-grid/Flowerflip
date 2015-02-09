@@ -11,25 +11,39 @@ class Thenable
       tasks = name
       name = null
 
-    @then name, (path, data) ->
+    callback = (choice, data) ->
+      composite = new Thenable
+      composite.tree.id = 'COMPOSITE-ALL'
       fulfilled = []
       rejected = []
-      composite = new Thenable null,
-        name: name
       tasks.forEach (t, i) ->
-        val = t data
-        if val and typeof val.then is 'function' and typeof val.else is 'function'
-          val.then (p, d) ->
-            fulfilled.push d
-            return unless fulfilled.length is tasks.length
-            composite.deliver fulfilled
-            d
-          val.else (p, e) ->
+        return if rejected.length
+        process.nextTick ->
+          try
+            val = t data
+            if val and typeof val.then is 'function' and typeof val.else is 'function'
+              val.then (p, d) ->
+                fulfilled.push d
+                return null unless fulfilled.length is tasks.length
+                composite.deliver fulfilled
+                null
+              val.else (p, e) ->
+                rejected.push e
+                composite.reject e unless rejected.length > 1
+                e
+              return
+            fulfilled.push val
+            composite.deliver fulfilled if fulfilled.length is tasks.length
+          catch e
             rejected.push e
-            composite.reject e if composite.state is State.PENDING
-            e
-          return
+            composite.reject e unless rejected.length > 1
       composite
+    id = @tree.registerNode @id, name, 'all', callback
+    promise = new Thenable @tree
+    promise.id = id
+
+    @tree.resolve @id
+    promise
 
   some: (name, tasks) ->
     if typeof name isnt 'string'
@@ -113,71 +127,24 @@ class Thenable
     @tree.resolve @id
     promise
 
-  changeState: ->
+  changeState: (state, value) ->
+    if @id is 'root'
+      @tree.execute value, state
+      return
+    node = @tree.nodes[@id]
+    return unless node
+    return unless node.choice
+    node.choice.set 'data', value
+    node.choice.state = state
+    @tree.resolve @id
 
   deliver: (value) ->
     @changeState State.FULFILLED, value
-    if @id is 'root'
-      @tree.execute value
-    else
-      @tree.resolve @id
     @
 
   reject: (value) ->
     @changeState State.REJECTED, value
-    if @id is 'root'
-      @tree.execute value
-    else
-      @tree.resolve @id
     @
-
-  resolve: ->
-    return if @state is State.PENDING
-
-    while @subscribers.length
-      sub = @subscribers.shift()
-      parent = @parent?.id or 'root'
-      funcName = if @state is State.FULFILLED then 'fulfilled' else 'rejected'
-      funcName = 'always' if sub.always
-      func = sub[funcName]
-
-      unless typeof func is 'function'
-        if @id and @parent?.tree is @tree
-          @tree.ignoreChoice parent, @id,
-            name: sub.name
-        sub.promise.changeState @state, @value, @parent if sub.promise
-        continue
-
-      try
-        subPath = @path.slice(0)
-        subPath.push sub.name or funcName
-        val = func subPath, @value
-        if val and typeof val.then is 'function' and typeof val.else is 'function'
-          # Promise returned
-          val.then (path, ret) =>
-            @async =>
-              if @id and @parent?.tree is @tree
-                @tree.followChoice parent, @id, ret,
-                  name: sub.name
-              sub.promise.changeState State.FULFILLED, ret if sub.promise
-            ret
-          val.else (path, e) =>
-            if @id and @parent?.tree is @tree
-              @tree.rejectChoice parent, @id
-                name: sub.name
-            sub.promise.changeState State.REJECTED, e, @parent if sub.promise
-            e
-          continue
-        # Straight-up value returned
-        if @id and @parent?.tree is @tree
-          @tree.followChoice parent, @id, val,
-            name: sub.name
-        sub.promise.changeState State.FULFILLED, val if sub.promise
-      catch e
-        if @id and @parent?.tree is @tree
-          @tree.rejectChoice parent, @id, val,
-            name: sub.name
-        sub.promise.changeState State.REJECTED, e, @parent if sub.promise
 
   async: (fn) ->
     process.nextTick fn

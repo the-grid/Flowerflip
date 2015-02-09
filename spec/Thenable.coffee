@@ -59,24 +59,26 @@ describe 'Thenable named promises', ->
       t = new Thenable
 
       y1 = (data) ->
-        new Thenable t.decisionTree
-        .deliver data
-        .then 'yep-1', ->
+        th = new Thenable
+        th.deliver data
+        pr = th.then 'yep-1', ->
           1
+        pr
+
       y2 = (data) ->
-        th = new Thenable t.decisionTree
+        th = new Thenable
         th.deliver data
         .then 'yep-2', ->
           2
       y3 = (data) ->
-        new Thenable t.decisionTree
-        .deliver data
+        th = new Thenable
+        th.deliver data
         .then 'yep-3', ->
           3
 
       n1 = ( data) ->
-        new Thenable t.decisionTree
-        .deliver data
+        th = new Thenable
+        th.deliver data
         .then 'nope-1', (path, data) ->
           e = new Error ""
           e.data =
@@ -84,7 +86,7 @@ describe 'Thenable named promises', ->
             nopes: 1
           throw e
       n2 = (data) ->
-        new Thenable t.decisionTree
+        new Thenable
         .deliver data
         .then 'nope-2', (path, data) ->
           e = new Error ""
@@ -93,7 +95,7 @@ describe 'Thenable named promises', ->
             nopes: 2
           e
       n3 = (data) ->
-        new Thenable t.decisionTree
+        new Thenable
         .deliver data
         .then 'nope-3', (path, data) ->
           e = new Error ""
@@ -115,7 +117,7 @@ describe 'Thenable named promises', ->
           nopes: 1
         return e.data
       .always (choice, data) ->
-        chai.expect(t.namedPath).to.eql ['start', 'yep-1', 'yep-2', 'yep-3', 'all-yep', 'all-nope-else']
+        chai.expect(choice.namedPath()).to.eql ['all-yep', 'all-nope-else']
         chai.expect(data).to.eql
           yeps: [1,2,3]
           nopes: 1
@@ -176,11 +178,9 @@ describe 'Thenable named promises', ->
         {}
       .some [y1, y2, y3]
       .then 'some-yep', (choice, data) ->
-        #console.log 'some-yep', choice, data
         chai.expect(data).to.eql [1,3]
         data
       .else (choice, data) ->
-        #console.log 'some-else', choice, data
         throw new Error 'foo'
       .some [n1, n2, n3]
       .then 'some-nope', ->

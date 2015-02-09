@@ -13,11 +13,14 @@ ImmediateResults = [
   'all'
 ]
 
+trees = 0
+
 Choice = require './Choice'
 {State} = require './state'
 
 class BehaviorTree
   constructor: (@name) ->
+    @id = trees++
     @nodes =
       root:
         id: 'root'
@@ -64,7 +67,6 @@ class BehaviorTree
     id
 
   executeNode: (sourceChoice, id, data) ->
-    console.log "#{sourceChoice}-#{id}"
     unless @nodes[id]
       throw new Error "Unknown node #{id}"
     node = @nodes[id]
@@ -76,6 +78,7 @@ class BehaviorTree
       val = node.callback choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         # Thenable returned, make subtree
+        node.subtree = val.tree
         val.then (c, r) =>
           choice.set 'data', r
           choice.state = State.FULFILLED
@@ -90,12 +93,13 @@ class BehaviorTree
       choice.state = State.FULFILLED
       @resolve node.id
     catch e
+      e.stack
       # Rejected
       choice.set 'data', e
       choice.state = State.REJECTED
       @resolve node.id
 
-  resolve: (id) ->
+  resolve: (id, reset = false) ->
     node = @nodes[id]
     return unless node
     return unless node.choice
@@ -103,15 +107,18 @@ class BehaviorTree
     val = node.choice.get 'data'
     dests = @findDestinations node, node.choice
     dests.forEach (d) =>
+      if not reset and d.choice and d.choice.state isnt State.PENDING
+        return
       @executeNode node.choice, d.id, val
 
-  execute: (data) ->
+  execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
     choice = new Choice node.id
-    for key, val of data
-      choice.set key, val
+    unless toString.call(data) is '[object Array]'
+      for key, val of data
+        choice.set key, val
     choice.set 'data', data
-    choice.state = State.FULFILLED
+    choice.state = state
     node.choice = choice
     @resolve node.id
 
@@ -129,7 +136,7 @@ class BehaviorTree
 
     source = @nodes[choice.promiseSource]
     while source
-      break if source.type is 'root' and choice.type is 'else'
+      #break if source.type is 'root' and choice.type is 'else'
       source.destinations.push choice
       choice.sources.push source
       break if choice.type in ImmediateResults

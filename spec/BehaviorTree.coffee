@@ -37,8 +37,9 @@ describe 'Behavior Tree API', ->
       tree.registerNode 'bar', 'baz', 'then', ->
       chai.expect(tree.nodes).to.have.keys ['root', 'foo', 'bar', 'baz']
       chai.expect(tree.nodes.root.destinations).to.be.an 'array'
-      chai.expect(tree.nodes.root.destinations.length).to.equal 1
+      chai.expect(tree.nodes.root.destinations.length).to.equal 2
       chai.expect(tree.nodes.root.destinations[0].name).to.equal 'foo'
+      chai.expect(tree.nodes.root.destinations[1].name).to.equal 'bar'
       chai.expect(tree.nodes.foo.destinations.length).to.equal 2
       chai.expect(tree.nodes.foo.destinations[0].name).to.equal 'bar'
       chai.expect(tree.nodes.foo.destinations[1].name).to.equal 'baz'

@@ -10,7 +10,7 @@ module.exports = ->
         options:
           reporter: 'spec'
           require: 'coffee-script/register'
-          #grep: 'some'
+          #grep: 'all'
 
     # Coding standards
     coffeelint:
