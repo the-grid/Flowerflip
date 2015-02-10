@@ -124,7 +124,7 @@ describe 'Thenable named promises', ->
         done()
         true
 
-  describe 'with all & branches', ->
+  describe.skip 'with all & branches', ->
     it 'should resolve with result per branch', (done) ->
       brancher = (orig, data) ->
         subtree = orig.tree 'calc'
@@ -259,7 +259,7 @@ describe 'Thenable named promises', ->
         res = results.map (r) -> r.value
         res[idx]
       .then (c, res) ->
-        chai.expect(res).to.equal 15
+        chai.expect(res).to.eql [15]
         done()
 
   describe.skip 'with contested static node branching', ->
