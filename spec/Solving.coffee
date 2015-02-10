@@ -31,4 +31,6 @@ describe 'Solving a layout problem', ->
       .always (c, d) ->
         clean = d.replace /\n/g, ''
         chai.expect(clean).to.equal '<section class="red directed"><article class="post"><p>Foo</p></article><article class="post"><h1>Bar</h1></article></section>'
-        done()
+        process.nextTick ->
+          console.error t.tree.toDOT()
+          done()
