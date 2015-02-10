@@ -16,11 +16,12 @@ class Thenable
       branches = []
       composite = choice.tree name
       Collection tasks, choice, data, (state, latest) ->
-        return unless state.isComplete()
         if state.countRejected() > 0
+          state.finished = true
           rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
           composite.reject rejects[0]
           return
+        return unless state.isComplete()
         composite.deliver state.fulfilled
       composite
     id = @tree.registerNode @id, name, 'all', callback

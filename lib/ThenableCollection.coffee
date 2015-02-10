@@ -1,5 +1,6 @@
 module.exports = (tasks, choice, data, onResult) ->
   state =
+    finished: false
     fulfilled: []
     rejected: []
     countFulfilled: ->
@@ -12,6 +13,7 @@ module.exports = (tasks, choice, data, onResult) ->
       state.countFulfilled() + state.countRejected() is tasks.length
   return onFulfilled state unless tasks.length
   tasks.forEach (t, i) ->
+    return if state.finished
     try
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
