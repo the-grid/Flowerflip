@@ -1,4 +1,8 @@
 module.exports = (tasks, choice, data, onResult) ->
+
+  if typeof tasks is 'function'
+    tasks = tasks choice, data
+
   state =
     finished: false
     fulfilled: []
