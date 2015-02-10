@@ -12,6 +12,7 @@ NegativeResults = [
 trees = 0
 
 Choice = require './Choice'
+Thenable = require './thenable'
 {State} = require './state'
 
 class BehaviorTree
@@ -24,12 +25,25 @@ class BehaviorTree
         type: 'root'
         sources: []
         destinations: []
+    @parentOnBranch = null
+
+  onSubtree: (choice, name, callback) =>
+    tree = new BehaviorTree
+    tree.parentOnBranch = @parentOnBranch
+    t = new Thenable tree
+    choice.subtree = tree
+    callback t, tree if callback
+    tree.nodes['root'].parentOnBranch = @parentOnBranch
+    t
 
   onBranch: (orig, branch, callback) =>
+    unless @parentOnBranch
+      throw new Error "Tree #{@id} is not within a branchable context (some, all, contest, race)"
     originalNode = @nodes[orig.id]
     unless originalNode
       throw new Error "Source node #{orig.id} not found"
     id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback
+    @parentOnBranch orig, branch, callback
     @nodes[id].choice = branch
     @nodes[id].destinations = originalNode.destinations.slice 0
     @resolve id
@@ -79,6 +93,8 @@ class BehaviorTree
       throw new Error "Node #{id} is not executable"
     choice = new Choice sourceChoice, id, node.name
     choice.onBranch = @onBranch
+    choice.onSubtree = @onSubtree
+    choice.parentOnBranch = @parentOnBranch
     node.choice = choice
     try
       val = node.callback choice, data
@@ -122,6 +138,9 @@ class BehaviorTree
   execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
     choice = new Choice node.id
+    choice.onBranch = @onBranch
+    choice.onSubtree = @onSubtree
+    choice.parentOnBranch = @parentOnBranch
     if typeof data is 'object' and toString.call(data) isnt '[object Array]'
       for key, val of data
         choice.set key, val

@@ -34,12 +34,19 @@ class Choice
     path.push @id if @state is State.FULFILLED
     path
 
+  tree: (name, callback = ->) ->
+    unless typeof @onSubtree is 'function'
+      throw new Error 'Cannot subtree without external onSubtree'
+    @onSubtree @, name, callback
+
   branch: (name, callback = ->) ->
     unless typeof @onBranch is 'function'
       throw new Error 'Cannot branch without external onBranch'
     id = name.replace /-/g, '_'
     branch = new Choice @source, id, name
     branch.state = State.PENDING
+    branch.onBranch = @onBranch
+    branch.parentOnBranch = @parentOnBranch
     clone = @toJSON()
     for key, val of clone
       continue if key in ['path', 'id']

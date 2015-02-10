@@ -1,17 +1,17 @@
 chai = require 'chai' unless chai
-Thenable = require '../lib/thenable'
+Root = require '../lib/Root'
 
 describe 'Thenable named promises', ->
   describe 'on resolved promise', ->
     it 'should call the "then" callback defined before delivery', (done) ->
-      t = new Thenable
+      t = Root()
       t.then 'foo', (choice, val) ->
         chai.expect(val).to.equal 'bar'
         chai.expect(choice.path).to.eql ['root', 'foo']
         done()
       t.deliver 'bar'
     it 'should call the "then" callback defined after delivery', (done) ->
-      t = new Thenable
+      t = Root()
       t.deliver 'bar'
       t.then 'baz', (choice, val) ->
         chai.expect(val).to.equal 'bar'
@@ -19,7 +19,7 @@ describe 'Thenable named promises', ->
         done()
   describe 'on failed promise', ->
     it 'should call the "else" callback', (done) ->
-      t = new Thenable
+      t = Root()
       t.then 'foo', (choice, val) ->
         throw new Error 'Failboat'
       .else 'bar', (choice, e) ->
@@ -31,7 +31,7 @@ describe 'Thenable named promises', ->
       t.deliver 'Hello'
   describe 'with anonymous thenable', ->
     it 'should resolve', (done) ->
-      t = new Thenable
+      t = Root()
       t.then ->
         # Executed, failing
         throw new Error 'Error'
@@ -56,28 +56,28 @@ describe 'Thenable named promises', ->
       
   describe 'with all & return values', ->
     it 'should resolve', (done) ->
-      t = new Thenable
+      t = Root()
 
-      y1 = (data) ->
-        th = new Thenable
+      y1 = (c, data) ->
+        th = Root()
         th.deliver data
         pr = th.then 'yep-1', ->
           1
         pr
 
-      y2 = (data) ->
-        th = new Thenable
+      y2 = (c, data) ->
+        th = Root()
         th.deliver data
         .then 'yep-2', ->
           2
-      y3 = (data) ->
-        th = new Thenable
+      y3 = (c, data) ->
+        th = Root()
         th.deliver data
         .then 'yep-3', ->
           3
 
-      n1 = ( data) ->
-        th = new Thenable
+      n1 = (c, data) ->
+        th = Root()
         th.deliver data
         .then 'nope-1', (path, data) ->
           e = new Error ""
@@ -85,8 +85,8 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 1
           throw e
-      n2 = (data) ->
-        new Thenable
+      n2 = (c, data) ->
+        Root()
         .deliver data
         .then 'nope-2', (path, data) ->
           e = new Error ""
@@ -94,8 +94,8 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 2
           e
-      n3 = (data) ->
-        new Thenable
+      n3 = (c, data) ->
+        Root()
         .deliver data
         .then 'nope-3', (path, data) ->
           e = new Error ""
@@ -124,28 +124,48 @@ describe 'Thenable named promises', ->
         done()
         true
 
+  describe 'with all & branches', ->
+    it 'should resolve with result per branch', (done) ->
+      brancher = (orig, data) ->
+        t = orig.tree 'calc'
+        t.then (choice) ->
+          choice.branch 'doubled', (c, d) ->
+            d * 2
+          choice.branch 'squared', (c, d) ->
+            d * d
+        .else (c, e) ->
+        t
+
+      t = Root()
+      t.deliver 5
+      .all [brancher]
+      .then (c, res) ->
+        chai.expect(res).to.be.an 'array'
+        chai.expect(res).to.eql [10, 25]
+        done()
+
   describe 'with some & return values', ->
     it 'should resolve', (done) ->
-      t = new Thenable
+      t = Root()
 
-      y1 = (data) ->
-        new Thenable()
+      y1 = (c, data) ->
+        Root()
         .deliver data
         .then 'yep-1', ->
           1
-      y2 = (data) ->
-        th = new Thenable()
+      y2 = (c, data) ->
+        th = Root()
         th.deliver data
         .then 'yep-2', ->
           throw new Error 'Foo'
-      y3 = (data) ->
-        new Thenable()
+      y3 = (c, data) ->
+        Root()
         .deliver data
         .then 'yep-3', (path, data) ->
           3
 
-      n1 = (data) ->
-        new Thenable()
+      n1 = (c, data) ->
+        Root()
         .deliver data
         .then 'nope-1', (path, data) ->
           e = new Error ""
@@ -153,8 +173,8 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 1
           throw e
-      n2 = (data) ->
-        new Thenable()
+      n2 = (c, data) ->
+        Root()
         .deliver data
         .then 'nope-2', (path, data) ->
           e = new Error ""
@@ -164,8 +184,8 @@ describe 'Thenable named promises', ->
           throw e
         .always 'still nope', (path, data) ->
           throw new Error "all"
-      n3 = (data) ->
-        new Thenable()
+      n3 = (c, data) ->
+        Root()
         .deliver data
         .then 'nope-3', (path, data) ->
           e = new Error ""
@@ -177,7 +197,9 @@ describe 'Thenable named promises', ->
       t.deliver {}
       .some [y1, y2, y3]
       .then 'some-yep', (choice, data) ->
-        chai.expect(data).to.eql [1,3]
+        chai.expect(data).to.be.an 'array'
+        chai.expect(data[0]).to.equal 1
+        chai.expect(data[2]).to.equal 3
         data
       .else (choice, data) ->
         throw new Error 'foo'
@@ -185,22 +207,25 @@ describe 'Thenable named promises', ->
       .then 'some-nope', ->
         {}
       .else 'some-nope-else', (choice, e) ->
-        chai.expect(e.data).to.eql
-          yeps: [1,3]
-          nopes: 3
+        chai.expect(e.data).to.be.an 'object'
+        chai.expect(e.data.yeps).to.be.an 'array'
+        chai.expect(e.data.yeps[0]).to.equal 1
+        chai.expect(e.data.yeps[2]).to.equal 3
+        chai.expect(e.data.nopes).to.equal 3
         return e.data
       .always (choice, data) ->
         process.nextTick ->
           chai.expect(choice.namedPath()).to.eql ['some-yep', 'some-nope-else']
-          chai.expect(data).to.eql
-            yeps: [1,3]
-            nopes: 3
+          chai.expect(data.yeps).to.be.an 'array'
+          chai.expect(data.yeps[0]).to.equal 1
+          chai.expect(data.yeps[2]).to.equal 3
+          chai.expect(data.nopes).to.equal 3
           done()
         true
 
   describe.skip 'with contested static node branching', ->
     it 'should resolve', (done) ->
-      t = new Thenable
+      t = Root()
       t.then 'start', (node, data) ->
         node.branch 'option-1', ->
           {}
@@ -220,7 +245,7 @@ describe 'Thenable named promises', ->
   
   describe.skip 'with contested dynamic node branching', ->
     it 'should resolve', (done) ->
-      t = new Thenable null,
+      t = Root
         # API method to choose a tied contest
         decideTie: (choices) ->
           return choices[0]
@@ -254,7 +279,7 @@ describe 'Thenable named promises', ->
 
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
-      t = new Thenable
+      t = Root()
       t.deliver true
       .then 'w-image', ->
         return {}
@@ -275,7 +300,7 @@ describe 'Thenable named promises', ->
         chai.expect(choice.namedPath()).to.eql ['w-image', 'portrait', 'small']
         done()
     it 'should produce the expected path also when there are sub-trees', (done) ->
-      t = new Thenable
+      t = Root()
       t.deliver true
       .then 'w-image', ->
         return {}
@@ -288,7 +313,7 @@ describe 'Thenable named promises', ->
       .else 'square', ->
         throw new Error 'Not square'
       .then 'faces', (choice, data) ->
-        t2 = new Thenable
+        t2 = Root()
         t2.deliver data
         t2.then 'face-detection', ->
           {}

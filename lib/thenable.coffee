@@ -1,9 +1,8 @@
 {State} = require './state'
-BehaviorTree = require './BehaviorTree'
+Collection = require './ThenableCollection'
 
 class Thenable
   constructor: (@tree, @options = {}) ->
-    @tree = new BehaviorTree unless @tree
     @id = 'root'
 
   all: (name, tasks) ->
@@ -12,31 +11,17 @@ class Thenable
       name = null
 
     callback = (choice, data) ->
-      composite = new Thenable
-      composite.tree.id = 'COMPOSITE-ALL'
       fulfilled = []
       rejected = []
-      tasks.forEach (t, i) ->
-        return if rejected.length
-        process.nextTick ->
-          try
-            val = t data
-            if val and typeof val.then is 'function' and typeof val.else is 'function'
-              val.then (p, d) ->
-                fulfilled.push d
-                return null unless fulfilled.length is tasks.length
-                composite.deliver fulfilled
-                null
-              val.else (p, e) ->
-                rejected.push e
-                composite.reject e unless rejected.length > 1
-                e
-              return
-            fulfilled.push val
-            composite.deliver fulfilled if fulfilled.length is tasks.length
-          catch e
-            rejected.push e
-            composite.reject e unless rejected.length > 1
+      branches = []
+      composite = choice.tree name
+      Collection tasks, choice, data, (state, latest) ->
+        return unless state.isComplete()
+        if state.countRejected() > 0
+          rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
+          composite.reject rejects[0]
+          return
+        composite.deliver state.fulfilled
       composite
     id = @tree.registerNode @id, name, 'all', callback
     promise = new Thenable @tree
@@ -50,15 +35,21 @@ class Thenable
       name = null
 
     callback = (choice, data) ->
-      composite = new Thenable
-      composite.tree.id = 'COMPOSITE-SOME'
+      composite = choice.tree name
+      Collection tasks, choice, data, (state, latest) ->
+        return unless state.isComplete()
+        if state.countFulfilled() > 0
+          composite.deliver state.fulfilled
+          return
+        rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
+        composite.reject rejects[rejects.length - 1]
       fulfilled = []
       rejected = []
       tasks.forEach (t, i) ->
         return if rejected.length
         process.nextTick ->
           try
-            val = t data
+            val = t choice, data
             if val and typeof val.then is 'function' and typeof val.else is 'function'
               val.then (p, d) ->
                 fulfilled.push d
