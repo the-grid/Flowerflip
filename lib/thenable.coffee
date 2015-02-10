@@ -74,15 +74,20 @@ class Thenable
 
     promise
 
-  contest: (name, tasks, resolve = null) ->
+  contest: (name, tasks, score = null, resolve = null) ->
     if typeof name isnt 'string'
-      resolve = tasks
+      resolve = score
+      score = tasks
       tasks = name
       name = null
 
+    unless typeof resolve is 'function'
+      resolve = (chosen) -> true
+
     callback = (choice, data) ->
       composite = choice.tree name
-      Collection tasks, choice, data, (state, latest) ->
+      chosenSolutions = []
+      onResult = (state, latest) ->
         return unless state.isComplete()
         if state.countFulfilled() > 0
           fulfills = []
@@ -91,13 +96,22 @@ class Thenable
             fulfills.push
               choice: state.choices[i]
               value: f
-          unless typeof resolve is 'function'
-            composite.deliver fulfills[0]
+          unless typeof score is 'function'
+            chosen = fulfills[0]
+            chosenSolutions.push chosen
+            accepted = resolve choice, chosen
+            return Collection tasks, choice, data, onResult unless accepted
+            composite.deliver chosenSolutions
             return
-          composite.deliver resolve fulfills
+          chosen = score fulfills
+          chosenSolutions.push chosen
+          accepted = resolve choice, chosen
+          return Collection tasks, choice, data, onResult unless accepted
+          composite.deliver chosenSolutions
           return
         rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1]
+      Collection tasks, choice, data, onResult
       composite
     id = @tree.registerNode @id, name, 'some', callback
     promise = new Thenable @tree
