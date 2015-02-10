@@ -14,6 +14,12 @@ describe 'Solving a layout problem', ->
             type: 'text'
             text: 'Foo'
           ]
+        ,
+          id: 'bar'
+          content: [
+            type: 'h1'
+            text: 'Bar'
+          ]
         ]
       t = Root()
       layout = require './fixtures/helloworld/index'
@@ -23,10 +29,8 @@ describe 'Solving a layout problem', ->
         p
       layout thenable
       .always (c, d) ->
-        console.log c.get 'color'
-        console.log c.get 'layout'
-        console.log c.get 'items'
-        if d instanceof Error
-          console.log ''+c, d.stack
-          return
-        console.log ''+c, d
+        chai.expect(c.get('color')).to.equal 'red'
+        chai.expect(c.get('layout')).to.equal 'directed'
+        clean = d.replace /\n/g, ''
+        chai.expect(clean).to.equal '<section><article class="post"><p>Foo</p></article><article class="post"><h1>Bar</h1></article></section>'
+        done()
