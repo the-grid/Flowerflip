@@ -29,8 +29,6 @@ describe 'Solving a layout problem', ->
         p
       layout thenable
       .always (c, d) ->
-        chai.expect(c.get('color')).to.equal 'red'
-        chai.expect(c.get('layout')).to.equal 'directed'
         clean = d.replace /\n/g, ''
-        chai.expect(clean).to.equal '<section><article class="post"><p>Foo</p></article><article class="post"><h1>Bar</h1></article></section>'
+        chai.expect(clean).to.equal '<section class="red directed"><article class="post"><p>Foo</p></article><article class="post"><h1>Bar</h1></article></section>'
         done()

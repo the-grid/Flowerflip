@@ -11,4 +11,4 @@ module.exports = (c, data) ->
     return false if n.availableItems().length
     true
   .then (n, ds) ->
-    "<section>#{ds.join('\n')}</section>"
+    "<section class=\"#{c.get('color')} #{c.get('layout')}\">#{ds.join('\n')}</section>"
