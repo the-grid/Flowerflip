@@ -44,38 +44,29 @@ class Thenable
           return
         rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1]
-      fulfilled = []
-      rejected = []
-      tasks.forEach (t, i) ->
-        return if rejected.length
-        process.nextTick ->
-          try
-            val = t choice, data
-            if val and typeof val.then is 'function' and typeof val.else is 'function'
-              val.then (p, d) ->
-                fulfilled.push d
-                return unless fulfilled.length + rejected.length is tasks.length
-                composite.deliver fulfilled
-                null
-              val.else (p, e) ->
-                rejected.push e
-                return unless fulfilled.length + rejected.length is tasks.length
-                if rejected.length is tasks.length
-                  composite.reject e
-                else
-                  composite.deliver fulfilled
-                e
-              return
-            fulfilled.push val
-            return unless fulfilled.length + rejected.length is tasks.length
-            composite.deliver fulfilled
-          catch e
-            rejected.push e
-            return unless fulfilled.length + rejected.length is tasks.length
-            if rejected.length is tasks.length
-              composite.reject e
-            else
-              composite.deliver fulfilled
+      composite
+    id = @tree.registerNode @id, name, 'some', callback
+    promise = new Thenable @tree
+    promise.id = id
+
+    promise
+
+  race: (name, tasks) ->
+    if typeof name isnt 'string'
+      tasks = name
+      name = null
+
+    callback = (choice, data) ->
+      composite = choice.tree name
+      Collection tasks, choice, data, (state, latest) ->
+        if state.countFulfilled() > 0
+          state.finished = true
+          fulfills = state.fulfilled.filter (f) -> typeof f isnt 'undefined'
+          composite.deliver fulfills[0]
+          return
+        return unless state.isComplete()
+        rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
+        composite.reject rejects[rejects.length - 1]
       composite
     id = @tree.registerNode @id, name, 'some', callback
     promise = new Thenable @tree

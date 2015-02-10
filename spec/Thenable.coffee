@@ -127,14 +127,15 @@ describe 'Thenable named promises', ->
   describe 'with all & branches', ->
     it 'should resolve with result per branch', (done) ->
       brancher = (orig, data) ->
-        t = orig.tree 'calc'
-        t.then (choice) ->
+        subtree = orig.tree 'calc'
+        subtree.deliver data
+        subtree.then (choice) ->
           choice.branch 'doubled', (c, d) ->
             d * 2
           choice.branch 'squared', (c, d) ->
             d * d
         .else (c, e) ->
-        t
+        subtree
 
       t = Root()
       t.deliver 5
@@ -142,6 +143,23 @@ describe 'Thenable named promises', ->
       .then (c, res) ->
         chai.expect(res).to.be.an 'array'
         chai.expect(res).to.eql [10, 25]
+        done()
+
+  describe 'with race & return values', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree 'a'
+        tree.deliver data
+        tree.then (c, d) ->
+          d * multiplier
+      t = Root()
+      t.deliver 5
+      .race [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ]
+      .then (c, res) ->
+        chai.expect(res).to.equal 10
         done()
 
   describe 'with some & return values', ->
