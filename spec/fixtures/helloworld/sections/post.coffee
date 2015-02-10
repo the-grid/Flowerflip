@@ -1,5 +1,4 @@
 titlesComponent = (type, choice, item) ->
-  console.log 'titles '+choice, item
   t = choice.tree 'title'
   t.deliver item
   .then (c, d) ->
@@ -7,9 +6,10 @@ titlesComponent = (type, choice, item) ->
       b.type is type
     choice.eatBlock block
     block
+  .then (c, b) ->
+    "<#{type}>#{b.text}</#{type}>"
 
 textComponent = (choice, item) ->
-  console.log 'text '+choice, item
   t = choice.tree 'text'
   t.deliver item
   .then (c, d) ->
@@ -17,13 +17,15 @@ textComponent = (choice, item) ->
       b.type is 'text'
     choice.eatBlock block
     block
+  .then (c, b) ->
+    "<p>#{b.text}</p>"
 
 module.exports = (choice, data) ->
   t = choice.tree 'post'
   t.deliver data
   .then (c, d) ->
     item = c.getItem (i) ->
-      i.content.length > 1
+      i.content.length is 1
     throw new Error 'No item' unless item
     c.set 'item', item
     item
@@ -32,7 +34,6 @@ module.exports = (choice, data) ->
     textComponent
   ]
   .then (c, res) ->
+    results = res.filter (r) -> typeof r isnt 'undefined'
     choice.eatItem c.get 'item'
-  .else (c, e) ->
-    console.log e.stack
-    throw e
+    "<article class=\"post\">#{results.join('\n')}</article>\n"
