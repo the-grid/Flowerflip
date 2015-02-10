@@ -10,6 +10,7 @@ class Choice
 
     @id = id
     @source = source
+    @parentSource = null
     @state = 0
     @onBranch = null
     @state = State.PENDING
@@ -60,8 +61,13 @@ class Choice
 
   get: (name) ->
     return @attributes[name] if typeof @attributes[name] isnt 'undefined'
-    return null unless @source
-    @source.get name
+    if @source
+      result = @source.get name
+      return result if result
+    if @parentSource
+      result = @parentSource.get name
+      return result if result
+    null
 
   set: (name, value) ->
     ensureActive @
@@ -96,6 +102,9 @@ class Choice
     if @source
       items = @source.availableItems()
       items = items.concat @attributes.items if @attributes.items.length
+    else if @parentSource
+      items = @parentSource.availableItems()
+      items = items.concat @attributes.items if @attributes.items.length
     else
       items = @attributes.items
 
@@ -127,7 +136,12 @@ class Choice
     block
 
   availableBlocks: (item) ->
-    blocks = if @source then @source.availableBlocks(item) else item.content
+    if @source
+      blocks = @source.availableBlocks item
+    else if @parentSource
+      blocks = @parentSource.availableBlocks item
+    else
+      blocks = item.content
     blocks.filter (b) =>
       @attributes.blocksEaten.indexOf(b) is -1
 

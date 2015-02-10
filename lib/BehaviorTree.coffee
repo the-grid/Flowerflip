@@ -3,6 +3,7 @@ PositiveResults = [
   'all'
   'some'
   'always'
+  'until'
 ]
 NegativeResults = [
   'else'
@@ -33,7 +34,7 @@ class BehaviorTree
     t = new Thenable tree
     choice.subtree = tree
     callback t, tree if callback
-    tree.nodes['root'].parentOnBranch = @parentOnBranch
+    tree.nodes['root'].parentSource = choice
     t
 
   onBranch: (orig, branch, callback) =>
@@ -141,6 +142,7 @@ class BehaviorTree
     choice.onBranch = @onBranch
     choice.onSubtree = @onSubtree
     choice.parentOnBranch = @parentOnBranch
+    choice.parentSource = @nodes['root'].parentSource
     if typeof data is 'object' and toString.call(data) isnt '[object Array]'
       for key, val of data
         choice.set key, val
