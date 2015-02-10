@@ -53,6 +53,18 @@ describe 'Thenable named promises', ->
         done()
         true
       t.deliver 'foo'
+    it 'should throw error if there is no "else" subscriber', (done) ->
+      err = null
+      try
+        t = Root()
+        t.finally (c, d) ->
+          throw new Error "Failed here #{d}"
+        t.deliver 'foo'
+      catch e
+        err = e
+      chai.expect(err).to.be.an.instanceOf Error
+      chai.expect(err.message).to.equal 'Failed here foo'
+      done()
       
   describe 'with all & return values', ->
     it 'should resolve', (done) ->

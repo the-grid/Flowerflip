@@ -4,8 +4,14 @@ Collection = require './ThenableCollection'
 class Thenable
   constructor: (@tree, @options = {}) ->
     @id = 'root'
+    @isFinal = false
+
+  checkFinal: ->
+    return unless @isFinal
+    throw new Error "Thenable #{@id} is final"
 
   all: (name, tasks) ->
+    do @checkFinal
     if typeof name isnt 'string'
       tasks = name
       name = null
@@ -31,6 +37,7 @@ class Thenable
     promise
 
   some: (name, tasks) ->
+    do @checkFinal
     if typeof name isnt 'string'
       tasks = name
       name = null
@@ -52,6 +59,7 @@ class Thenable
     promise
 
   race: (name, tasks) ->
+    do @checkFinal
     if typeof name isnt 'string'
       tasks = name
       name = null
@@ -75,6 +83,7 @@ class Thenable
     promise
 
   contest: (name, tasks, score = null, resolve = null) ->
+    do @checkFinal
     if typeof name isnt 'string'
       resolve = score
       score = tasks
@@ -120,6 +129,7 @@ class Thenable
     promise
 
   then: (name, onFulfilled) ->
+    do @checkFinal
     if typeof name is 'function'
       onFulfilled = name
       name = null
@@ -130,6 +140,7 @@ class Thenable
     promise
 
   else: (name, onRejected) ->
+    do @checkFinal
     if typeof name is 'function'
       onRejected = name
       name = null
@@ -140,12 +151,24 @@ class Thenable
     promise
 
   always: (name, onAlways) ->
+    do @checkFinal
     if typeof name is 'function'
       onAlways = name
       name = null
 
     id = @tree.registerNode @id, name, 'always', onAlways
     promise = new Thenable @tree
+    promise.id = id
+    promise
+
+  finally: (name, onFinally) ->
+    if typeof name is 'function'
+      onFinally = name
+      name = null
+
+    id = @tree.registerNode @id, name, 'finally', onFinally
+    promise = new Thenable @tree
+    promise.isFinal = true
     promise.id = id
     promise
 

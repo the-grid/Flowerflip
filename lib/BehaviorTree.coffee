@@ -3,10 +3,13 @@ PositiveResults = [
   'all'
   'some'
   'always'
-  'until'
+  'finally'
+  'contest'
+  'race'
 ]
 NegativeResults = [
   'else'
+  'finally'
   'always'
 ]
 
@@ -118,8 +121,7 @@ class BehaviorTree
       @resolve node.id
     catch e
       # Rejected
-      if choice.state is State.ABORTED
-        return
+      return if choice.state is State.ABORTED
       choice.set 'data', e
       choice.state = State.REJECTED
       @resolve node.id
@@ -130,6 +132,7 @@ class BehaviorTree
     return unless node.choice
     return unless node.choice.state in [State.FULFILLED, State.REJECTED]
     val = node.choice.get 'data'
+    throw val if node.type is 'finally' and node.choice.state is State.REJECTED
     dests = @findDestinations node, node.choice
     dests.forEach (d) =>
       if not reset and d.choice and d.choice.state isnt State.PENDING
@@ -166,8 +169,8 @@ class BehaviorTree
     source = @nodes[choice.promiseSource]
     while source
       #break if source.type is 'root' and choice.type is 'else'
-      source.destinations.push choice
-      choice.sources.push source
+      source.destinations.push choice if source.destinations.indexOf(choice) is -1
+      choice.sources.push source if choice.sources.indexOf(source) is -1
       @resolve source.id
       break if source.type is 'root'
       if choice.type is 'all' and source.type in PositiveResults
@@ -187,6 +190,24 @@ class BehaviorTree
       source = @nodes[source.promiseSource]
     choice.sources
 
-  toDOT: -> 'TODO'
+
+  toDOT: ->
+    trees = {}
+    register = (t, node) ->
+      t.addNode node.id, node.name, node.choice?.attributes, node.choice?.state, toVisual node.subtree
+      for d in node.sources
+        t.addEdge d.id, node.id, node.type, node.choice?.state
+      for d in node.destinations
+        register t, d
+    toVisual = (tree) ->
+      return unless tree
+      return trees[tree.id] if trees[tree.id]
+      Tree = require './tree'
+      t = new Tree tree.name
+      register t, tree.nodes['root']
+      t
+
+    t = toVisual @
+    t.toDOT()
 
 module.exports = BehaviorTree
