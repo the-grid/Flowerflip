@@ -68,7 +68,7 @@ class Thenable
         rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1]
       composite
-    id = @tree.registerNode @id, name, 'some', callback
+    id = @tree.registerNode @id, name, 'race', callback
     promise = new Thenable @tree
     promise.id = id
 
@@ -113,11 +113,12 @@ class Thenable
         composite.reject rejects[rejects.length - 1]
       Collection tasks, choice, data, onResult
       composite
-    id = @tree.registerNode @id, name, 'some', callback
+    id = @tree.registerNode @id, name, 'contest', callback
     promise = new Thenable @tree
     promise.id = id
 
     promise
+
   then: (name, onFulfilled) ->
     if typeof name is 'function'
       onFulfilled = name
