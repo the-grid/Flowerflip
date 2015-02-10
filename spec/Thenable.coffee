@@ -241,6 +241,27 @@ describe 'Thenable named promises', ->
           done()
         true
 
+  describe 'with contest & simple scoring', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree 'a'
+        tree.deliver data
+        tree.then "#{multiplier}", (c, d) ->
+          d * multiplier
+      t = Root()
+      t.deliver 5
+      .contest [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ], (results) ->
+        paths = results.map (r) -> ''+r.choice
+        idx = paths.indexOf 'root-3-then'
+        res = results.map (r) -> r.value
+        res[idx]
+      .then (c, res) ->
+        chai.expect(res).to.equal 15
+        done()
+
   describe.skip 'with contested static node branching', ->
     it 'should resolve', (done) ->
       t = Root()

@@ -74,6 +74,36 @@ class Thenable
 
     promise
 
+  contest: (name, tasks, resolve = null) ->
+    if typeof name isnt 'string'
+      resolve = tasks
+      tasks = name
+      name = null
+
+    callback = (choice, data) ->
+      composite = choice.tree name
+      Collection tasks, choice, data, (state, latest) ->
+        return unless state.isComplete()
+        if state.countFulfilled() > 0
+          fulfills = []
+          for f, i in state.fulfilled
+            continue if typeof f is 'undefined'
+            fulfills.push
+              choice: state.choices[i]
+              value: f
+          unless typeof resolve is 'function'
+            composite.deliver fulfills[0]
+            return
+          composite.deliver resolve fulfills
+          return
+        rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
+        composite.reject rejects[rejects.length - 1]
+      composite
+    id = @tree.registerNode @id, name, 'some', callback
+    promise = new Thenable @tree
+    promise.id = id
+
+    promise
   then: (name, onFulfilled) ->
     if typeof name is 'function'
       onFulfilled = name

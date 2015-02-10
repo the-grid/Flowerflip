@@ -3,6 +3,7 @@ module.exports = (tasks, choice, data, onResult) ->
     finished: false
     fulfilled: []
     rejected: []
+    choices: []
     countFulfilled: ->
       full = state.fulfilled.filter (f) -> typeof f isnt 'undefined'
       full.length
@@ -18,9 +19,11 @@ module.exports = (tasks, choice, data, onResult) ->
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (p, d) ->
+          state.choices[i] = p
           state.fulfilled[i] = d
           onResult state, d
         val.else (p, e) ->
+          state.choices[i] = p
           state.rejected[i] = e
           onResult state, e
         return
