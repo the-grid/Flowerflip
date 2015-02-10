@@ -85,8 +85,8 @@ class Choice
 
     for item in items
       try
-        callback item
-        return item
+        ret = callback item
+        return item if ret
       catch e
         continue
     null
@@ -123,14 +123,16 @@ class Choice
 
     for block in blocks
       try
-        callback block
-        return block
+        ret = callback block
+        return block if ret
       catch e
         continue
     null
 
   eatBlock: (block, node = null) ->
     ensureActive @
+    unless block
+      throw new Error "No block provided"
     @attributes.blocksEaten.push block
     # TODO: Auto-mark item as eaten when all necessary blocks are consumed
     block
