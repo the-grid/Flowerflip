@@ -59,7 +59,7 @@ class Choice
     branch
 
   get: (name) ->
-    return @attributes[name] if @attributes[name] isnt 'undefined'
+    return @attributes[name] if typeof @attributes[name] isnt 'undefined'
     return null unless @source
     @source.get name
 
