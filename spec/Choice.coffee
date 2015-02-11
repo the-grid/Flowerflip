@@ -248,3 +248,7 @@ describe 'Choice node API', ->
       chai.expect(c.isSubtypeOf('table', 'data')).to.equal true
     it 'should recognize CtA elements as cta', ->
       chai.expect(c.isSubtypeOf('cta', 'cta')).to.equal true
+    it 'should support also block objects', ->
+      header =
+        type: 'h1'
+      chai.expect(c.isSubtypeOf(header, 'textual')).to.equal true

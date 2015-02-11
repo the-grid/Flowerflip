@@ -147,6 +147,9 @@ class Choice
       @attributes.itemsEaten.indexOf(i) is -1
 
   isSubtypeOf: (type, checkType) ->
+    if typeof type is 'object'
+      type = type.type
+
     # TODO: Parse from The Grid JSON Schema
     return true if checkType is 'block'
     return true if type is checkType
