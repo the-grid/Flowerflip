@@ -214,3 +214,37 @@ describe 'Choice node API', ->
       chai.expect(b.attributes.itemsEaten).to.eql [two]
 
       done()
+
+  describe 'handling block type hierarchy', ->
+    c = new Choice 'typer'
+    it 'should recognize anything as a block', ->
+      chai.expect(c.isSubtypeOf('h1', 'block')).to.equal true
+      chai.expect(c.isSubtypeOf('text', 'block')).to.equal true
+      chai.expect(c.isSubtypeOf('unknown', 'block')).to.equal true
+    it 'should recognize any headline level anything as a headline', ->
+      chai.expect(c.isSubtypeOf('h1', 'headline')).to.equal true
+      chai.expect(c.isSubtypeOf('h2', 'headline')).to.equal true
+      chai.expect(c.isSubtypeOf('h6', 'headline')).to.equal true
+      chai.expect(c.isSubtypeOf('headline', 'headline')).to.equal true
+    it 'should not recognize non-headlines as a headline', ->
+      chai.expect(c.isSubtypeOf('text', 'headline')).to.equal false
+      chai.expect(c.isSubtypeOf('video', 'headline')).to.equal false
+    it 'should recognize any text element as a textual', ->
+      chai.expect(c.isSubtypeOf('h1', 'textual')).to.equal true
+      chai.expect(c.isSubtypeOf('text', 'textual')).to.equal true
+      chai.expect(c.isSubtypeOf('code', 'textual')).to.equal true
+    it 'should not recognize non-text elements as a textual', ->
+      chai.expect(c.isSubtypeOf('image', 'textual')).to.equal false
+      chai.expect(c.isSubtypeOf('video', 'textual')).to.equal false
+    it 'should recognize any media element as media', ->
+      chai.expect(c.isSubtypeOf('image', 'media')).to.equal true
+      chai.expect(c.isSubtypeOf('video', 'media')).to.equal true
+      chai.expect(c.isSubtypeOf('audio', 'media')).to.equal true
+      chai.expect(c.isSubtypeOf('article', 'media')).to.equal true
+      chai.expect(c.isSubtypeOf('location', 'media')).to.equal true
+      chai.expect(c.isSubtypeOf('quote', 'media')).to.equal true
+    it 'should recognize any data element as data', ->
+      chai.expect(c.isSubtypeOf('list', 'data')).to.equal true
+      chai.expect(c.isSubtypeOf('table', 'data')).to.equal true
+    it 'should recognize CtA elements as cta', ->
+      chai.expect(c.isSubtypeOf('cta', 'cta')).to.equal true
