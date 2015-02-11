@@ -23,12 +23,19 @@ class Choice
       items: []
       itemsEaten: []
       blocksEaten: []
+      paths: []
 
   namedPath: ->
-    return [] if @id is 'root'
     path = if @source then @source.namedPath() else []
-    path.push @name if @name and @state is State.FULFILLED
+    if @state is State.FULFILLED
+      path.push @name if @name
+      path = path.concat @attributes.paths
     path
+
+  addPath: (p) ->
+    unless typeof p is 'string'
+      throw new Error 'Paths must be strings'
+    @attributes.paths.push p
 
   fulfilledPath: ->
     return [] if @id is 'root'
@@ -71,6 +78,10 @@ class Choice
     return unless fulfilled and leaf.continuation
     items = @availableItems()
     leafItems = leaf.availableItems()
+
+    paths = leaf.namedPath()
+    @addPath p for p in paths
+
     for i in items
       continue unless leafItems.indexOf(i) is -1
       @eatItem i

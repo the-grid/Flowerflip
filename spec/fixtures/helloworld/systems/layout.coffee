@@ -14,9 +14,12 @@ module.exports = (choice, data) ->
     unless layouts[d.config.layout]
       throw new Error "Unknown layout #{d.config.layout}"
     choice.set 'layout', d.config.layout
+    c.addPath d.config.layout
     layouts[d.config.layout]
   .else 'derived', (c, d) ->
-    layouts.simple
+    layout = 'simple'
+    c.addPath layout
+    layouts[layout]
   .then (c, d) ->
     choice.set 'sections', d
     data

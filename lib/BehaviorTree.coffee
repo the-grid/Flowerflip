@@ -40,7 +40,7 @@ class BehaviorTree
     choice.subtrees.push tree
 
     tree.nodes['root'].parentSource = choice
-    tree.nodes['root'].choice = new Choice 'root'
+    tree.nodes['root'].choice = new Choice null, 'root', name
     tree.nodes['root'].choice.onSubtree = tree.onSubtree
     tree.nodes['root'].choice.parentSource = choice
 

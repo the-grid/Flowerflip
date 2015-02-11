@@ -94,6 +94,7 @@ class Thenable
       name = null
 
     unless typeof resolve is 'function'
+      # Auto-break unless until callback is provided
       resolve = (chosen) -> true
 
     unless typeof score is 'function'

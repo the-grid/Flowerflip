@@ -26,6 +26,15 @@ describe 'Solving a layout problem', ->
       t.deliver page
       layout t
       .finally (c, d) ->
+        chai.expect(c.namedPath()).to.eql [
+          'color'
+          'user'
+          'red'
+          'layout'
+          'user'
+          'directed'
+          'sections'
+        ]
         chai.expect(d).to.be.a 'string'
         clean = d.replace /\n/g, ''
         chai.expect(clean).to.equal '<section class="red directed"><article class="post"><p>Foo</p></article><article class="post"><h1>Bar</h1></article></section>'
