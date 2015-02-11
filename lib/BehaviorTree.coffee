@@ -196,7 +196,10 @@ class BehaviorTree
     register = (t, node) ->
       t.addNode node.id, node.name, node.choice?.attributes, node.choice?.state, toVisual node.subtree
       for d in node.sources
-        t.addEdge d.id, node.id, node.type, node.choice?.state
+        state = State.PENDING
+        if node.choice and node.choice.source
+          state = node.choice.state if node.choice.source.id is d.id
+        t.addEdge d.id, node.id, node.type, state
       for d in node.destinations
         register t, d
     toVisual = (tree) ->

@@ -38,6 +38,21 @@ class Tree
     return 'root' unless fulfilled.length
     fulfilled[fulfilled.length - 1].to
 
+  cleanData: (d) ->
+    d.replace /"/g, '\''
+
+  dataToDot: (data) ->
+    d = data
+    if typeof data is 'object'
+      if data.data
+        d = data.data
+      else
+        d = data
+      if typeof d is 'object'
+        keys = Object.keys(d).filter (k) -> k not in ['items', 'itemsEaten', 'blocksEaten']
+        return "{#{@cleanData(keys.join(','))}}"
+    typeof d
+
   nodeToDot: (prefix, id, node) ->
     if node.subtree
       dot = node.subtree.toDOT 'subgraph', "#{prefix}  " if node.subtree
@@ -51,8 +66,10 @@ class Tree
     dot = "#{prefix}  t#{id}_#{node.id}"
     attributes = {}
     attributes.shape = 'box'
-    attributes.label = typeof node.data
-    attributes.label = '' unless node.data
+    labelParts = []
+    labelParts.push node.name if node.name
+    labelParts.push @dataToDot node.data if node.data
+    attributes.label = labelParts.join ' '
     attributes.shape = 'Mdiamond' if node.id is @getRoot()
     attributes.shape = 'Msquare' if node.id is @getLeaf()
 
@@ -83,7 +100,6 @@ class Tree
       when State.REJECTED
         attributes.color = 'red'
 
-    console.log edge.from, edge.to, edge.state
     dot += " ["
     attribs = []
     for key, val of attributes
