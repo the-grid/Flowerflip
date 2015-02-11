@@ -19,14 +19,15 @@ textComponent = (choice, item) ->
     block
   .then (c, b) ->
     "<p>#{b.text}</p>"
-
+called = 0
 module.exports = (choice, data) ->
   t = choice.tree 'post'
   t.deliver data
   .then (c, d) ->
+    called++
     item = c.getItem (i) ->
       i.content.length is 1
-    throw new Error 'No item' unless item
+    throw new Error called + ' No item' unless item
     c.set 'item', item
     item
   .some [
@@ -35,5 +36,6 @@ module.exports = (choice, data) ->
   ]
   .then (c, res) ->
     results = res.filter (r) -> typeof r isnt 'undefined'
+    # Mark item as eaten upstream
     choice.eatItem c.get 'item'
     "<article class=\"post\">#{results.join('\n')}</article>\n"

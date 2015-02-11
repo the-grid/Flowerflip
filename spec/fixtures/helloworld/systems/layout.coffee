@@ -6,7 +6,7 @@ layouts =
   ]
 
 module.exports = (choice, data) ->
-  tree = choice.tree 'layout'
+  tree = choice.continue 'layout'
   tree.deliver data
   .then 'user', (c, d) ->
     unless d.config.layout

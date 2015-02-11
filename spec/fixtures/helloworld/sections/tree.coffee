@@ -3,12 +3,15 @@ getSections = (n) ->
   sections
 
 module.exports = (c, data) ->
-  tree = c.tree 'sections'
+  tries = 0
+  tree = c.continue 'sections'
   tree.deliver data
   .contest getSections, (results) ->
-    c.eatItem results[0].value
-  , (n) ->
+    results[0]
+  , (n, chosen) ->
+    tries++
+    return true if tries > 3
     return false if n.availableItems().length
     true
   .then (n, ds) ->
-    "<section class=\"#{c.get('color')} #{c.get('layout')}\">#{ds.join('\n')}</section>"
+    "<section class=\"#{c.get('color')} #{c.get('layout')}\">#{ds.map((d) -> d.value).join('\n')}</section>"

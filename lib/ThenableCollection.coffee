@@ -1,5 +1,4 @@
 module.exports = (tasks, choice, data, onResult) ->
-
   if typeof tasks is 'function'
     tasks = tasks choice, data
 
@@ -25,10 +24,14 @@ module.exports = (tasks, choice, data, onResult) ->
         val.then (p, d) ->
           state.choices[i] = p
           state.fulfilled[i] = d
+          p.continuation = val.tree.continuation
+          choice.registerSubleaf p, true
           onResult state, d
         val.else (p, e) ->
           state.choices[i] = p
           state.rejected[i] = e
+          p.continuation = val.tree.continuation
+          choice.registerSubleaf p, false
           onResult state, e
         return
       state.fulfilled[i] = val

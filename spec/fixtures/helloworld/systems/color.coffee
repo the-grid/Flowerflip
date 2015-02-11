@@ -1,5 +1,5 @@
 module.exports = (choice, data) ->
-  tree = choice.tree 'color'
+  tree = choice.continue 'color'
   tree.deliver data
   .then 'user', (c, d) ->
     unless d.config.color

@@ -31,13 +31,20 @@ class BehaviorTree
         destinations: []
     @parentOnBranch = null
 
-  onSubtree: (choice, name, callback) =>
-    tree = new BehaviorTree
+  onSubtree: (choice, name, continuation, callback) =>
+    tree = new BehaviorTree name
     tree.parentOnBranch = @parentOnBranch
+    tree.continuation = continuation
     t = new Thenable tree
-    choice.subtree = tree
-    callback t, tree if callback
+    choice.subtrees = [] unless choice.subtrees
+    choice.subtrees.push tree
+
     tree.nodes['root'].parentSource = choice
+    tree.nodes['root'].choice = new Choice 'root'
+    tree.nodes['root'].choice.onSubtree = tree.onSubtree
+    tree.nodes['root'].choice.parentSource = choice
+
+    callback t, tree if callback
     t
 
   onBranch: (orig, branch, callback) =>
@@ -105,14 +112,19 @@ class BehaviorTree
       return if choice.state is State.ABORTED
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         # Thenable returned, make subtree
-        node.subtree = val.tree
+        choice.subtrees = [] unless choice.subtrees
+        choice.subtrees.push val.tree
         val.then (c, r) =>
           choice.set 'data', r
           choice.state = State.FULFILLED
+          c.continuation = val.tree.continuation
+          choice.registerSubleaf c, true
           @resolve node.id
         val.else (c, e) =>
           choice.set 'data', e
           choice.state = State.REJECTED
+          c.continuation = val.tree.continuation
+          choice.registerSubleaf c, false
           @resolve node.id
         return
       # Straight-up value returned
@@ -141,7 +153,7 @@ class BehaviorTree
 
   execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
-    choice = new Choice node.id
+    choice = @nodes['root'].choice or new Choice node.id
     choice.onBranch = @onBranch
     choice.onSubtree = @onSubtree
     choice.parentOnBranch = @parentOnBranch
@@ -194,7 +206,10 @@ class BehaviorTree
   toDOT: ->
     trees = {}
     register = (t, node) ->
-      t.addNode node.id, node.name, node.choice?.attributes, node.choice?.state, toVisual node.subtree
+      subtrees = []
+      if node.choice?.subtrees?.length
+        subtrees = node.choice.subtrees.map toVisual
+      t.addNode node.id, node.name, node.choice?.attributes, node.choice?.state, subtrees
       for d in node.sources
         state = State.PENDING
         if node.choice and node.choice.source

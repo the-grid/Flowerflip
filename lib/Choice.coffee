@@ -11,6 +11,7 @@ class Choice
     @id = id
     @source = source
     @parentSource = null
+    @subLeaves = []
     @state = 0
     @onBranch = null
     @state = State.PENDING
@@ -38,7 +39,12 @@ class Choice
   tree: (name, callback = ->) ->
     unless typeof @onSubtree is 'function'
       throw new Error 'Cannot subtree without external onSubtree'
-    @onSubtree @, name, callback
+    @onSubtree @, name, false, callback
+
+  continue: (name, callback = ->) ->
+    unless typeof @onSubtree is 'function'
+      throw new Error 'Cannot continue tree without external onSubtree'
+    @onSubtree @, name, true, callback
 
   branch: (name, callback = ->) ->
     unless typeof @onBranch is 'function'
@@ -59,13 +65,30 @@ class Choice
 
     branch
 
-  get: (name) ->
+  registerSubleaf: (leaf, fulfilled) ->
+    @subLeaves = [] unless @subLeaves
+    @subLeaves.push leaf
+    return unless fulfilled and leaf.continuation
+    items = @availableItems()
+    leafItems = leaf.availableItems()
+    for i in items
+      continue unless leafItems.indexOf(i) is -1
+      @eatItem i
+
+  acceptedSubleaves: ->
+    return [] unless @subLeaves.length
+    @subLeaves.filter (l) -> l.state is State.FULFILLED and l.continuation
+
+  get: (name, followParent = true) ->
     return @attributes[name] if typeof @attributes[name] isnt 'undefined'
-    if @source
-      result = @source.get name
+    for l in @acceptedSubleaves()
+      result = l.get name, false
       return result if result
-    if @parentSource
-      result = @parentSource.get name
+    if @source
+      result = @source.get name, followParent
+      return result if result
+    if @parentSource and followParent
+      result = @parentSource.get name, followParent
       return result if result
     null
 

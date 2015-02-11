@@ -24,13 +24,12 @@ describe 'Solving a layout problem', ->
       t = Root()
       layout = require './fixtures/helloworld/index'
       t.deliver page
-      thenable = t.then (c, p) ->
-        c.attributes.items = p.items
-        p
-      layout thenable
-      .always (c, d) ->
+      layout t
+      .finally (c, d) ->
+        chai.expect(d).to.be.a 'string'
         clean = d.replace /\n/g, ''
         chai.expect(clean).to.equal '<section class="red directed"><article class="post"><p>Foo</p></article><article class="post"><h1>Bar</h1></article></section>'
+        return done()
         process.nextTick ->
           console.error t.tree.toDOT()
           done()

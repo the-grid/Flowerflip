@@ -20,8 +20,9 @@ class Thenable
       fulfilled = []
       rejected = []
       branches = []
-      composite = choice.tree name
-      Collection tasks, choice, data, (state, latest) ->
+      composite = choice.continue name
+      subChoice = composite.tree.nodes['root'].choice
+      Collection tasks, subChoice, data, (state, latest) ->
         if state.countRejected() > 0
           state.finished = true
           rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
@@ -43,8 +44,9 @@ class Thenable
       name = null
 
     callback = (choice, data) ->
-      composite = choice.tree name
-      Collection tasks, choice, data, (state, latest) ->
+      composite = choice.continue name
+      subChoice = composite.tree.nodes['root'].choice
+      Collection tasks, subChoice, data, (state, latest) ->
         return unless state.isComplete()
         if state.countFulfilled() > 0
           composite.deliver state.fulfilled
@@ -65,8 +67,9 @@ class Thenable
       name = null
 
     callback = (choice, data) ->
-      composite = choice.tree name
-      Collection tasks, choice, data, (state, latest) ->
+      composite = choice.continue name
+      subChoice = composite.tree.nodes['root'].choice
+      Collection tasks, subChoice, data, (state, latest) ->
         if state.countFulfilled() > 0
           state.finished = true
           fulfills = state.fulfilled.filter (f) -> typeof f isnt 'undefined'
@@ -93,8 +96,12 @@ class Thenable
     unless typeof resolve is 'function'
       resolve = (chosen) -> true
 
+    unless typeof score is 'function'
+      score = (fulfills) -> fulfills[0]
+
     callback = (choice, data) ->
-      composite = choice.tree name
+      composite = choice.continue name
+      subChoice = composite.tree.nodes['root'].choice
       chosenSolutions = []
       onResult = (state, latest) ->
         return unless state.isComplete()
@@ -105,22 +112,15 @@ class Thenable
             fulfills.push
               choice: state.choices[i]
               value: f
-          unless typeof score is 'function'
-            chosen = fulfills[0]
-            chosenSolutions.push chosen
-            accepted = resolve choice, chosen
-            return Collection tasks, choice, data, onResult unless accepted
-            composite.deliver chosenSolutions
-            return
           chosen = score fulfills
           chosenSolutions.push chosen
-          accepted = resolve choice, chosen
-          return Collection tasks, choice, data, onResult unless accepted
+          accepted = resolve subChoice, chosen
+          return Collection tasks, subChoice, data, onResult unless accepted
           composite.deliver chosenSolutions
           return
         rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1]
-      Collection tasks, choice, data, onResult
+      Collection tasks, subChoice, data, onResult
       composite
     id = @tree.registerNode @id, name, 'contest', callback
     promise = new Thenable @tree

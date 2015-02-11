@@ -9,14 +9,14 @@ class Tree
     @nodes = {}
     @edges = []
 
-  addNode: (id, name, data, state, subtree) ->
+  addNode: (id, name, data, state, subtrees) ->
     #console.log "addNode", id, name
     @nodes[id] =
       id: id
       name: name
       data: data
       state: state
-      subtree: subtree
+      subtrees: subtrees
 
   addEdge: (src, dest, name, state) ->
     for e in @edges
@@ -54,13 +54,17 @@ class Tree
     typeof d
 
   nodeToDot: (prefix, id, node) ->
-    if node.subtree
-      dot = node.subtree.toDOT 'subgraph', "#{prefix}  " if node.subtree
-      for edge in @edges
-        if edge.to is node.id
-          edge.subTo = "t#{node.subtree.id}_#{node.subtree.getRoot()}"
-        if edge.from is node.id
-          edge.subFrom = "t#{node.subtree.id}_#{node.subtree.getLeaf()}"
+    if node.subtrees and node.subtrees.length
+      dot = ''
+      for sub in node.subtrees
+        dot += sub.toDOT 'subgraph', "#{prefix}  "
+        for edge in @edges
+          if edge.to is node.id
+            edge.subTo = [] unless edge.subTo
+            edge.subTo.push "t#{sub.id}_#{sub.getRoot()}"
+          if edge.from is node.id
+            edge.subFrom = [] unless edge.subFrom
+            edge.subFrom.push "t#{sub.id}_#{sub.getLeaf()}"
       return dot
 
     dot = "#{prefix}  t#{id}_#{node.id}"
@@ -86,35 +90,40 @@ class Tree
     dot
 
   edgeToDot: (prefix, id, edge) ->
-    from = edge.subFrom or "t#{id}_#{edge.from}"
-    to = edge.subTo or "t#{id}_#{edge.to}"
-    dot = "#{prefix}  #{from} -> #{to}"
-    attributes = {}
-    attributes.label = edge.name or edge.type
+    froms = edge.subFrom or ["t#{id}_#{edge.from}"]
+    tos = edge.subTo or ["t#{id}_#{edge.to}"]
 
-    edge.state = State.PENDING if typeof edge.state is 'undefined'
+    dot = ''
+    for from in froms
+      for to in tos
+        dot += "#{prefix}  #{from} -> #{to}"
+        attributes = {}
+        attributes.label = edge.name or edge.type
 
-    switch edge.state
-      when State.PENDING
-        attributes.style = 'dotted'
-      when State.REJECTED
-        attributes.color = 'red'
+        edge.state = State.PENDING if typeof edge.state is 'undefined'
 
-    dot += " ["
-    attribs = []
-    for key, val of attributes
-      if typeof val is 'boolean'
-        attribs.push "#{key}=#{val}"
-        continue
-      attribs.push "#{key}=\"#{val}\""
-    dot += attribs.join ','
-    dot += "]"
-    dot += ";\n"
+        switch edge.state
+          when State.PENDING
+            attributes.style = 'dotted'
+          when State.REJECTED
+            attributes.color = 'red'
+
+        dot += " ["
+        attribs = []
+        for key, val of attributes
+          if typeof val is 'boolean'
+            attribs.push "#{key}=#{val}"
+            continue
+          attribs.push "#{key}=\"#{val}\""
+        dot += attribs.join ','
+        dot += "]"
+        dot += ";\n"
     dot
 
   toDOT: (type = 'digraph', prefix = '', attributes = {}) ->
     dot = prefix
     name = if prefix then "cluster#{@id}" else @name
+    attributes.label = @name if @name and typeof @name is 'string'
     dot += "#{type} #{name} {\n"
     for key, val of attributes
       dot += "#{prefix}  #{key}=#{val};\n"
