@@ -1,4 +1,4 @@
-Thenable = require './thenable'
+Thenable = require './Thenable'
 BehaviorTree = require './BehaviorTree'
 
 module.exports = (options = {}) ->

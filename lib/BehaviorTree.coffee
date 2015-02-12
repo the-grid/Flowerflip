@@ -16,7 +16,7 @@ NegativeResults = [
 trees = 0
 
 Choice = require './Choice'
-Thenable = require './thenable'
+Thenable = require './Thenable'
 {State} = require './state'
 
 class BehaviorTree
