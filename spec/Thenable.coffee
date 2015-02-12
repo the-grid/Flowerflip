@@ -136,25 +136,32 @@ describe 'Thenable named promises', ->
         done()
         true
 
-  describe.skip 'with all & branches', ->
+  describe 'with all & branches', ->
     it 'should resolve with result per branch', (done) ->
       brancher = (orig, data) ->
         subtree = orig.tree 'calc'
         subtree.deliver data
-        subtree.then (choice) ->
+        t = subtree.then (choice) ->
           choice.branch 'doubled', (c, d) ->
             d * 2
           choice.branch 'squared', (c, d) ->
             d * d
-        .else (c, e) ->
-        subtree
+        t
+      direct = (orig, data) ->
+        subtree = orig.tree 'directcalc'
+        subtree.deliver data
+        t = subtree.then 'tripled', (c, d) ->
+          d * 3
 
       t = Root()
       t.deliver 5
-      .all [brancher]
+      .all [brancher, direct]
       .then (c, res) ->
         chai.expect(res).to.be.an 'array'
-        chai.expect(res).to.eql [10, 25]
+        chai.expect(res).to.eql [
+          [10, 25]
+          15
+        ]
         done()
 
   describe 'with race & return values', ->
@@ -212,8 +219,8 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 2
           throw e
-        .always 'still nope', (path, data) ->
-          throw new Error "all"
+        .else 'still nope', (path, data) ->
+          throw new Error "still nope"
       n3 = (c, data) ->
         Root()
         .deliver data

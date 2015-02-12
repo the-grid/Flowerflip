@@ -27,13 +27,15 @@ class BehaviorTree
         id: 'root'
         name: @name
         type: 'root'
+        choices: {}
         sources: []
         destinations: []
+        branches: []
     @parentOnBranch = null
 
   onSubtree: (choice, name, continuation, callback) =>
     tree = new BehaviorTree name
-    tree.parentOnBranch = @parentOnBranch
+    tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
     tree.continuation = continuation
     t = new Thenable tree
     choice.subtrees = [] unless choice.subtrees
@@ -53,11 +55,16 @@ class BehaviorTree
     originalNode = @nodes[orig.id]
     unless originalNode
       throw new Error "Source node #{orig.id} not found"
-    id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback
-    @parentOnBranch orig, branch, callback
+    @parentOnBranch @, orig, branch, callback
+    id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback, false
     @nodes[id].choice = branch
     @nodes[id].destinations = originalNode.destinations.slice 0
-    @resolve id
+    originalNode.branches = [] unless originalNode.branches
+    originalNode.branches.push @nodes[id]
+
+    # Trigger re-resolve to cause the new branch to be run
+    sourcePath = if orig.source then orig.source.toString else ''
+    @resolve originalNode.promiseSource, sourcePath
 
   createId: (name, seq = 0) ->
     id = name.replace /-/g, '_'
@@ -72,7 +79,7 @@ class BehaviorTree
       seqId = "#{id}_#{seq}"
     seqId
 
-  registerNode: (source, name, type, callback) ->
+  registerNode: (source, name, type, callback, autoresolve = true) ->
     unless callback
       type = name
       callback = type
@@ -89,10 +96,12 @@ class BehaviorTree
       promiseSource: source
       type: type
       callback: callback
+      choices: {}
       sources: []
       destinations: []
+      branches: []
 
-    @findSources @nodes[id]
+    @findSources @nodes[id], autoresolve
 
     id
 
@@ -102,11 +111,15 @@ class BehaviorTree
     node = @nodes[id]
     unless typeof node.callback is 'function'
       throw new Error "Node #{id} is not executable"
-    choice = new Choice sourceChoice, id, node.name
-    choice.onBranch = @onBranch
-    choice.onSubtree = @onSubtree
-    choice.parentOnBranch = @parentOnBranch
-    node.choice = choice
+    sourcePath = sourceChoice.toString()
+    unless node.choices[sourcePath]
+      choice = new Choice sourceChoice, id, node.name
+      choice.onBranch = @onBranch
+      choice.onSubtree = @onSubtree
+      choice.parentOnBranch = @parentOnBranch
+      node.choices[sourcePath] = choice
+    choice = node.choices[sourcePath]
+    localPath = node.choices[sourcePath].toString()
     try
       val = node.callback choice, data
       return if choice.state is State.ABORTED
@@ -119,37 +132,41 @@ class BehaviorTree
           choice.state = State.FULFILLED
           c.continuation = val.tree.continuation
           choice.registerSubleaf c, true
-          @resolve node.id
+          @resolve node.id, sourcePath
         val.else (c, e) =>
           choice.set 'data', e
           choice.state = State.REJECTED
           c.continuation = val.tree.continuation
           choice.registerSubleaf c, false
-          @resolve node.id
+          @resolve node.id, sourcePath
         return
       # Straight-up value returned
       choice.set 'data', val
       choice.state = State.FULFILLED
-      @resolve node.id
+      @resolve node.id, sourcePath
     catch e
       # Rejected
       return if choice.state is State.ABORTED
       choice.set 'data', e
       choice.state = State.REJECTED
-      @resolve node.id
+      @resolve node.id, sourcePath
 
-  resolve: (id) ->
+  resolve: (id, sourcePath = '') ->
     node = @nodes[id]
     return unless node
-    return unless node.choice
-    return unless node.choice.state in [State.FULFILLED, State.REJECTED]
-    val = node.choice.get 'data'
-    throw val if node.type is 'finally' and node.choice.state is State.REJECTED
-    dests = @findDestinations node, node.choice
+    choice = node.choices[sourcePath]
+    return unless choice
+    return unless choice.state in [State.FULFILLED, State.REJECTED]
+    val = choice.get 'data'
+    throw val if node.type is 'finally' and choice.state is State.REJECTED
+
+    localPath = choice.toString()
+    dests = @findDestinations node, choice
     dests.forEach (d) =>
-      if d.choice and d.choice.state isnt State.PENDING
+      destChoice = d.choices[localPath]
+      if destChoice and destChoice.state isnt State.PENDING
         return
-      @executeNode node.choice, d.id, val
+      @executeNode choice, d.id, val
 
   execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
@@ -163,8 +180,8 @@ class BehaviorTree
         choice.set key, val
     choice.set 'data', data
     choice.state = state
-    node.choice = choice
-    @resolve node.id
+    node.choices[''] = choice
+    @resolve node.id, ''
 
   findDestinations: (node, choice) ->
     node.destinations.filter (d) ->
@@ -174,7 +191,7 @@ class BehaviorTree
         return true
       false
 
-  findSources: (choice) ->
+  findSources: (choice, autoresolve) ->
     gotNegative = false
     gotPositive = false
 
@@ -183,7 +200,16 @@ class BehaviorTree
       #break if source.type is 'root' and choice.type is 'else'
       source.destinations.push choice if source.destinations.indexOf(choice) is -1
       choice.sources.push source if choice.sources.indexOf(source) is -1
-      @resolve source.id
+
+      if source.branches and source.branches.length
+        for branch in source.branches
+          choice.sources.push branch if choice.sources.indexOf(branch) is -1
+          branch.destinations.push choice if branch.destinations.indexOf(choice) is -1
+          for path, c of branch.choices
+            @resolve branch.id, path if autoresolve
+
+      for path, c of source.choices
+        @resolve source.id, path if autoresolve
       break if source.type is 'root'
       if choice.type is 'all' and source.type in PositiveResults
         break
@@ -201,7 +227,6 @@ class BehaviorTree
         break if gotPositive
       source = @nodes[source.promiseSource]
     choice.sources
-
 
   toDOT: ->
     trees = {}

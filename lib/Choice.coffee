@@ -66,11 +66,13 @@ class Choice
       continue if key in ['path', 'id']
       branch.attributes[key] = val
 
-    @state = State.ABORTED
-
     @onBranch @, branch, callback
 
     branch
+
+  abort: (reason) ->
+    @set 'aborted', reason
+    @state = State.ABORTED
 
   registerSubleaf: (leaf, fulfilled) ->
     @subLeaves = [] unless @subLeaves

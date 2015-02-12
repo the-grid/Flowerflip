@@ -25,7 +25,7 @@ describe 'Solving a layout problem', ->
       layout = require './fixtures/helloworld/index'
       t.deliver page
       layout t
-      .finally (c, d) ->
+      .then (c, d) ->
         chai.expect(c.namedPath()).to.eql [
           'color'
           'user'
