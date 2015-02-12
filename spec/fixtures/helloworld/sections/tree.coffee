@@ -6,7 +6,8 @@ module.exports = (c, data) ->
   tries = 0
   tree = c.continue 'sections'
   tree.deliver data
-  .contest getSections, (results) ->
+  .contest getSections, (n, results) ->
+    p = n.namedPath()
     results[0]
   , (n, chosen) ->
     tries++
@@ -14,4 +15,4 @@ module.exports = (c, data) ->
     return false if n.availableItems().length
     true
   .then (n, ds) ->
-    "<section class=\"#{c.get('color')} #{c.get('layout')}\">#{ds.map((d) -> d.value).join('\n')}</section>"
+    "<section class=\"#{c.get('color')} #{c.get('layout')}\">#{ds.map((d) -> d.value[0]).join('\n')}</section>"

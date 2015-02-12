@@ -37,8 +37,5 @@ describe 'Solving a layout problem', ->
         ]
         chai.expect(d).to.be.a 'string'
         clean = d.replace /\n/g, ''
-        chai.expect(clean).to.equal '<section class="red directed"><article class="post"><p>Foo</p></article><article class="post"><h1>Bar</h1></article></section>'
+        chai.expect(clean).to.equal '<section class="red directed"><article class="post right"><p>Foo</p></article><article class="post right"><h1>Bar</h1></article></section>'
         return done()
-        process.nextTick ->
-          console.error t.tree.toDOT()
-          done()

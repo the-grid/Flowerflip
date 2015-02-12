@@ -19,17 +19,23 @@ textComponent = (choice, item) ->
     block
   .then (c, b) ->
     "<p>#{b.text}</p>"
-called = 0
+
 module.exports = (choice, data) ->
   t = choice.tree 'post'
   t.deliver data
   .then (c, d) ->
-    called++
     item = c.getItem (i) ->
       i.content.length is 1
     throw new Error called + ' No item' unless item
     c.set 'item', item
-    item
+    c.branch 'left', (b) ->
+      b.set 'variant', 'right'
+      item
+    c.branch 'right', (b) ->
+      b.set 'variant', 'right'
+      item
+  .else (d, e) ->
+    d.get 'item'
   .some [
     titlesComponent.bind @, 'h1'
     textComponent
@@ -38,4 +44,5 @@ module.exports = (choice, data) ->
     results = res.filter (r) -> typeof r isnt 'undefined'
     # Mark item as eaten upstream
     choice.eatItem c.get 'item'
-    "<article class=\"post\">#{results.join('\n')}</article>\n"
+    variant = c.get 'variant'
+    "<article class=\"post #{variant}\">#{results.join('\n')}</article>\n"
