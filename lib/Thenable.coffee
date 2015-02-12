@@ -191,9 +191,6 @@ class Thenable
     @changeState State.REJECTED, value
     @
 
-  async: (fn) ->
-    process.nextTick fn
-
   toDOT: -> @tree.toDOT()
 
 module.exports = Thenable
