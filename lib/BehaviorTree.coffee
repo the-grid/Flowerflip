@@ -6,6 +6,7 @@ PositiveResults = [
   'finally'
   'contest'
   'race'
+  'root'
 ]
 NegativeResults = [
   'else'
@@ -201,7 +202,6 @@ class BehaviorTree
 
     source = @nodes[choice.promiseSource]
     while source
-      #break if source.type is 'root' and choice.type is 'else'
       source.destinations.push choice if source.destinations.indexOf(choice) is -1
       choice.sources.push source if choice.sources.indexOf(source) is -1
 
@@ -214,22 +214,27 @@ class BehaviorTree
 
       for path, c of source.choices
         @resolve source.id, path if autoresolve
+
       break if source.type is 'root'
-      if choice.type is 'all' and source.type in PositiveResults
-        break
-      if choice.type is 'some' and source.type in PositiveResults
-        break
-      if choice.type is 'then' and source.type in PositiveResults
+      if choice.type in ['then', 'all', 'some', 'contest', 'race'] and source.type in PositiveResults
         break
       if choice.type is 'else' and source.type in NegativeResults
         break
-      if choice.type is 'always' and source.type in PositiveResults
+      if choice.type in ['always', 'finally'] and source.type in PositiveResults
         gotPositive = true
         break if gotNegative
-      if choice.type is 'always' and source.type in NegativeResults
+      if choice.type is ['always', 'finally'] and source.type in NegativeResults
         gotNegative = true
         break if gotPositive
       source = @nodes[source.promiseSource]
+      if gotPositive and source.type in PositiveResults
+        # Skip this one, keep looking for a negative
+        source = @nodes[source.promiseSource]
+        continue
+      if gotNegative and source.type in NegativeResults
+        # Skip this one, keep looking for a positive
+        source = @nodes[source.promiseSource]
+        continue
     choice.sources
 
   toDOT: ->

@@ -156,7 +156,7 @@ describe 'Thenable named promises', ->
       t = Root()
       t.deliver 5
       .all [brancher, direct]
-      .then (c, res) ->
+      .finally (c, res) ->
         chai.expect(res).to.be.an 'array'
         chai.expect(res).to.eql [
           [10, 25]
