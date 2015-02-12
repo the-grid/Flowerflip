@@ -60,7 +60,7 @@ class Choice
     unless typeof @onBranch is 'function'
       throw new Error 'Cannot branch without external onBranch'
     id = name.replace /-/g, '_'
-    branch = new Choice @source, id, name
+    branch = @createChoice @source, id, name
     branch.state = State.PENDING
     branch.onBranch = @onBranch
     branch.parentOnBranch = @parentOnBranch
@@ -203,6 +203,10 @@ class Choice
       blocks = item.content
     blocks.filter (b) =>
       @attributes.blocksEaten.indexOf(b) is -1
+
+  createChoice: (source, id, name) ->
+    # Override in subclasses
+    new Choice source, id, name
 
   toJSON: ->
     base =

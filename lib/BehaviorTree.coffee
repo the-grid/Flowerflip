@@ -16,12 +16,11 @@ NegativeResults = [
 
 trees = 0
 
-Choice = require './Choice'
 Thenable = require './Thenable'
 {State} = require './state'
 
 class BehaviorTree
-  constructor: (@name) ->
+  constructor: (@name, @options = {}) ->
     @id = trees++
     @nodes =
       root:
@@ -35,7 +34,7 @@ class BehaviorTree
     @parentOnBranch = null
 
   onSubtree: (choice, name, continuation, callback) =>
-    tree = new BehaviorTree name
+    tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
     tree.continuation = continuation
     t = new Thenable tree
@@ -44,7 +43,7 @@ class BehaviorTree
 
     node = tree.nodes['root']
     node.parentSource = choice
-    subChoice = new Choice null, 'root', name
+    subChoice = new @options.Choice null, 'root', name
     node.choices[''] = subChoice
     node.choices[''].onSubtree = tree.onSubtree
     node.choices[''].parentSource = choice
@@ -118,7 +117,7 @@ class BehaviorTree
       throw new Error "Node #{id} is not executable"
     sourcePath = sourceChoice.toString()
     unless node.choices[sourcePath]
-      choice = new Choice sourceChoice, id, node.name
+      choice = new @options.Choice sourceChoice, id, node.name
       choice.onBranch = @onBranch
       choice.onSubtree = @onSubtree
       choice.parentOnBranch = @parentOnBranch
@@ -175,7 +174,7 @@ class BehaviorTree
 
   execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
-    choice = @nodes['root'].choices[''] or new Choice node.id
+    choice = @nodes['root'].choices[''] or new @options.Choice node.id
     choice.onBranch = @onBranch
     choice.onSubtree = @onSubtree
     choice.parentOnBranch = @parentOnBranch
