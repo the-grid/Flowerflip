@@ -202,6 +202,16 @@ class BehaviorTree
 
     source = @nodes[choice.promiseSource]
     while source
+      if gotPositive and source.type in PositiveResults
+        # Skip this one, keep looking for a negative
+        source = @nodes[source.promiseSource]
+        continue
+      if gotNegative and source.type in NegativeResults
+        # Skip this one, keep looking for a positive
+        source = @nodes[source.promiseSource]
+        continue
+
+      # Add edge between source and node
       source.destinations.push choice if source.destinations.indexOf(choice) is -1
       choice.sources.push source if choice.sources.indexOf(source) is -1
 
@@ -227,14 +237,6 @@ class BehaviorTree
         gotNegative = true
         break if gotPositive
       source = @nodes[source.promiseSource]
-      if gotPositive and source.type in PositiveResults
-        # Skip this one, keep looking for a negative
-        source = @nodes[source.promiseSource]
-        continue
-      if gotNegative and source.type in NegativeResults
-        # Skip this one, keep looking for a positive
-        source = @nodes[source.promiseSource]
-        continue
     choice.sources
 
   toDOT: ->
