@@ -25,9 +25,9 @@ class Choice
       blocksEaten: []
       paths: []
 
-  namedPath: ->
+  namedPath: (includeSelf = false) ->
     path = if @source then @source.namedPath() else []
-    if @state is State.FULFILLED
+    if @state is State.FULFILLED or includeSelf
       path.push @name if @name
       path = path.concat @attributes.paths
     path

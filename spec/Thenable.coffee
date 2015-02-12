@@ -25,9 +25,9 @@ describe 'Thenable named promises', ->
       .else 'bar', (choice, e) ->
         chai.expect(choice.path).to.eql ['root', 'foo', 'bar']
         chai.expect(e.message).to.equal 'Failboat'
-        process.nextTick ->
-          chai.expect(choice.namedPath()).to.eql ['bar']
-          done()
+        chai.expect(choice.namedPath()).to.eql []
+        chai.expect(choice.namedPath(true)).to.eql ['bar']
+        done()
       t.deliver 'Hello'
   describe 'with anonymous thenable', ->
     it 'should resolve', (done) ->
@@ -251,14 +251,12 @@ describe 'Thenable named promises', ->
         chai.expect(e.data.nopes).to.equal 3
         return e.data
       .always (choice, data) ->
-        process.nextTick ->
-          chai.expect(choice.namedPath()).to.eql ['some-yep', 'some-nope-else']
-          chai.expect(data.yeps).to.be.an 'array'
-          chai.expect(data.yeps[0]).to.equal 1
-          chai.expect(data.yeps[2]).to.equal 3
-          chai.expect(data.nopes).to.equal 3
-          done()
-        true
+        chai.expect(choice.namedPath()).to.eql ['some-yep', 'some-nope-else']
+        chai.expect(data.yeps).to.be.an 'array'
+        chai.expect(data.yeps[0]).to.equal 1
+        chai.expect(data.yeps[2]).to.equal 3
+        chai.expect(data.nopes).to.equal 3
+        done()
 
   describe 'with contest & simple scoring', ->
     it 'should resolve', (done) ->
@@ -295,10 +293,8 @@ describe 'Thenable named promises', ->
       .then 'after', (choice) ->
         return true
       .then (choice, val) ->
-        process.nextTick ->
-          chai.expect(choice.namedPath()).to.eql ['option-2', 'option-2-sub', 'after']
-          done()
-        true
+        chai.expect(choice.namedPath()).to.eql ['option-2', 'option-2-sub', 'after']
+        done()
       t.deliver 'foo'
   
   describe.skip 'with contested dynamic node branching', ->
