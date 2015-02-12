@@ -63,7 +63,7 @@ class Choice
     branch.parentOnBranch = @parentOnBranch
     clone = @toJSON()
     for key, val of clone
-      continue if key in ['path', 'id']
+      continue if key in ['path', 'id', 'aborted']
       branch.attributes[key] = val
 
     @onBranch @, branch, callback

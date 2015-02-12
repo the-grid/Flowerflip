@@ -21,7 +21,7 @@ class Thenable
       rejected = []
       branches = []
       composite = choice.continue name
-      subChoice = composite.tree.nodes['root'].choice
+      subChoice = composite.tree.nodes['root'].choices['']
       Collection tasks, composite, subChoice, data, (state, latest) ->
         if state.countRejected() > 0
           state.finished = true
@@ -45,7 +45,7 @@ class Thenable
 
     callback = (choice, data) ->
       composite = choice.continue name
-      subChoice = composite.tree.nodes['root'].choice
+      subChoice = composite.tree.nodes['root'].choices['']
       Collection tasks, composite, subChoice, data, (state, latest) ->
         return unless state.isComplete()
         if state.countFulfilled() > 0
@@ -68,7 +68,7 @@ class Thenable
 
     callback = (choice, data) ->
       composite = choice.continue name
-      subChoice = composite.tree.nodes['root'].choice
+      subChoice = composite.tree.nodes['root'].choices['']
       Collection tasks, composite, subChoice, data, (state, latest) ->
         if state.countFulfilled() > 0
           state.finished = true
@@ -102,7 +102,7 @@ class Thenable
 
     callback = (choice, data) ->
       composite = choice.continue name
-      subChoice = composite.tree.nodes['root'].choice
+      subChoice = composite.tree.nodes['root'].choices['']
       chosenSolutions = []
       onResult = (state, latest) ->
         return unless state.isComplete()
@@ -113,7 +113,7 @@ class Thenable
             fulfills.push
               choice: state.choices[i]
               value: f
-          chosen = score fulfills
+          chosen = score subChoice, fulfills
           chosenSolutions.push chosen
           accepted = resolve subChoice, chosen
           return Collection tasks, composite, subChoice, data, onResult unless accepted

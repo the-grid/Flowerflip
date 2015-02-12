@@ -41,10 +41,13 @@ class BehaviorTree
     choice.subtrees = [] unless choice.subtrees
     choice.subtrees.push tree
 
-    tree.nodes['root'].parentSource = choice
-    tree.nodes['root'].choice = new Choice null, 'root', name
-    tree.nodes['root'].choice.onSubtree = tree.onSubtree
-    tree.nodes['root'].choice.parentSource = choice
+    node = tree.nodes['root']
+    node.parentSource = choice
+    subChoice = new Choice null, 'root', name
+    node.choices[''] = subChoice
+    node.choices[''].onSubtree = tree.onSubtree
+    node.choices[''].parentSource = choice
+    node.choices[''].parentOnBranch = @parentOnBranch
 
     callback t, tree if callback
     t
@@ -57,13 +60,14 @@ class BehaviorTree
       throw new Error "Source node #{orig.id} not found"
     @parentOnBranch @, orig, branch, callback
     id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback, false
-    @nodes[id].choice = branch
+    sourcePath = if orig.source then orig.source.toString() else ''
+    destPath = branch.toString()
+    @nodes[id].choices[sourcePath] = branch
     @nodes[id].destinations = originalNode.destinations.slice 0
     originalNode.branches = [] unless originalNode.branches
     originalNode.branches.push @nodes[id]
 
     # Trigger re-resolve to cause the new branch to be run
-    sourcePath = if orig.source then orig.source.toString else ''
     @resolve originalNode.promiseSource, sourcePath
 
   createId: (name, seq = 0) ->
@@ -170,7 +174,7 @@ class BehaviorTree
 
   execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
-    choice = @nodes['root'].choice or new Choice node.id
+    choice = @nodes['root'].choices[''] or new Choice node.id
     choice.onBranch = @onBranch
     choice.onSubtree = @onSubtree
     choice.parentOnBranch = @parentOnBranch
