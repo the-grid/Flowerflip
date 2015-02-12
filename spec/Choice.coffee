@@ -11,6 +11,13 @@ describe 'Choice node API', ->
       c = new Choice 'hello'
       chai.expect(c.path).to.eql ['hello']
       chai.expect(c.source).to.be.a 'null'
+    it 'should provide added paths in namedPath', ->
+      c = new Choice 'hello'
+      chai.expect(c.path).to.eql ['hello']
+      c.addPath ['foo', 'bar']
+      chai.expect(c.namedPath()).to.eql []
+      chai.expect(c.namedPath(true)).to.eql ['foo', 'bar']
+      chai.expect(c.source).to.be.a 'null'
     it 'should contain full path in its toString', ->
       c = new Choice 'world'
       chai.expect('' + c).to.equal 'world'

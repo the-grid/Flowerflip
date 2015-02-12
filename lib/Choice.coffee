@@ -33,6 +33,9 @@ class Choice
     path
 
   addPath: (p) ->
+    if p instanceof Array
+      @addPath path for path in p
+      return
     unless typeof p is 'string'
       throw new Error 'Paths must be strings'
     @attributes.paths.push p
