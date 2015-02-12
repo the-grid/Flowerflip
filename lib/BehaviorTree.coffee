@@ -138,7 +138,7 @@ class BehaviorTree
       choice.state = State.REJECTED
       @resolve node.id
 
-  resolve: (id, reset = false) ->
+  resolve: (id) ->
     node = @nodes[id]
     return unless node
     return unless node.choice
@@ -147,7 +147,7 @@ class BehaviorTree
     throw val if node.type is 'finally' and node.choice.state is State.REJECTED
     dests = @findDestinations node, node.choice
     dests.forEach (d) =>
-      if not reset and d.choice and d.choice.state isnt State.PENDING
+      if d.choice and d.choice.state isnt State.PENDING
         return
       @executeNode node.choice, d.id, val
 
