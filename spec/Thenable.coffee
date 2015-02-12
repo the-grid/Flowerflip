@@ -272,7 +272,7 @@ describe 'Thenable named promises', ->
       .contest [
         multiply.bind @, 2
         multiply.bind @, 3
-      ], (results) ->
+      ], (c, results) ->
         paths = results.map (r) -> ''+r.choice
         idx = paths.indexOf 'root-3-then'
         res = results.map (r) -> r.value
