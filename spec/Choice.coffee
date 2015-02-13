@@ -245,6 +245,32 @@ describe 'Choice node API', ->
         chai.expect(target).to.equal foo
         done()
 
+    it 'should allow passing in a value to throw', (done) ->
+      c = new Choice 'expecter'
+      foo = 'bar'
+      try
+        c.expect (expect) ->
+          expect(foo).to.be.a 'boolean'
+        , foo
+      catch e
+        failure = c.get 'preconditionFailed'
+        chai.expect(failure.message).to.equal "expected 'bar' to be a boolean"
+        chai.expect(e).to.equal foo
+        done()
+
+    it 'should allow passing in a value to throw', (done) ->
+      c = new Choice 'expecter'
+      foo = 'bar'
+      try
+        c.expect foo, (expect) ->
+          expect.to.be.a 'boolean'
+        , foo
+      catch e
+        failure = c.get 'preconditionFailed'
+        chai.expect(failure.message).to.equal "expected 'bar' to be a boolean"
+        chai.expect(e).to.equal foo
+        done()
+
   describe 'handling block type hierarchy', ->
     c = new Choice 'typer'
     it 'should recognize anything as a block', ->
