@@ -259,3 +259,39 @@ describe 'Choice node API', ->
       header =
         type: 'h1'
       chai.expect(c.isSubtypeOf(header, 'textual')).to.equal true
+
+
+  describe 'get/set attributes', ->
+    describe 'getting attribute on instance', ->
+      it 'should return value', ->
+        p = new Choice 'hello'
+        p.set 'attr', 'bar'
+        chai.expect(p.get('attr')).to.eql 'bar'
+    describe 'getting attribute in child', ->
+      it 'should return value', ->
+        p = new Choice 'hello'
+        p.set 'attr', 'bar'
+        c = new Choice p, 'world'
+        chai.expect(c.get('attr')).to.eql 'bar'
+    describe 'getting attribute in grand-grand child', ->
+      it 'should return value', ->
+        p = new Choice 'hello'
+        p.set 'attr', 'bar'
+        c = new Choice p, 'child'
+        gc = new Choice c, 'grand-child'
+        ggc = new Choice gc, 'g-grand-child'
+        chai.expect(ggc.get('attr')).to.eql 'bar'
+
+    describe 'getting non-existant attribute', ->
+      it 'should return null', ->
+        p = new Choice 'hello'
+        p.set 'existant', 'bar'
+        chai.expect(p.get('non-existant')).to.be.a 'null'
+    describe 'getting non-existant attribute in grand-grand child', ->
+      it 'should return null', ->
+        p = new Choice 'hello'
+        c = new Choice p, 'child'
+        gc = new Choice c, 'grand-child'
+        ggc = new Choice gc, 'g-grand-child'
+        chai.expect(ggc.get('color2')).to.be.a 'null'
+
