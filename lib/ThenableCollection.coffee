@@ -34,17 +34,18 @@ module.exports = (tasks, composite, choice, data, onResult) ->
 
   composite.tree.parentOnBranch = (tree, orig, branch, callback) ->
     unless orig.state is State.ABORTED
-      orig.abort "Branched off to #{branch}", true
+      orig.abort "Branched off to #{branch}", null, true
     state.branches.push branch
 
-  composite.tree.onAbort = (rChoice, reason, branched) ->
-    error = new Error reason
+  composite.tree.onAbort = (rChoice, reason, value, branched) ->
+    value = new Error reason unless value
     state.aborted.push
       branched: branched
       choice: rChoice
       reason: reason
-      error: error
-    onResult state, error unless branched
+      value: value
+    onResult state, value unless branched
+  choice.onAbort = composite.tree.onAbort
 
   handleResult = (collection, idx, rChoice, value) ->
     path = if rChoice then rChoice.toString() else ''

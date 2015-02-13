@@ -78,11 +78,11 @@ class Choice
 
     branch
 
-  abort: (reason, onBranch) ->
+  abort: (reason, value, onBranch = false) ->
     @set 'aborted', reason
     @state = State.ABORTED
     return unless @onAbort
-    @onAbort @, reason, onBranch
+    @onAbort @, reason, value, onBranch
 
   registerSubleaf: (leaf, fulfilled) ->
     @subLeaves = [] unless @subLeaves

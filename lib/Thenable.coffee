@@ -30,7 +30,7 @@ class Thenable
           return
         if state.countAborted() > 0
           state.finished = true
-          composite.reject state.aborted[state.aborted.length - 1].error
+          composite.reject state.aborted[state.aborted.length - 1].value
           return
         return unless state.isComplete()
         composite.deliver state.getFulfilled()
@@ -58,7 +58,7 @@ class Thenable
           return
         rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
         unless rejects.length
-          rejects = state.aborted.map (a) -> a.error
+          rejects = state.aborted.map (a) -> a.value
         composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
         return
       composite
@@ -86,7 +86,7 @@ class Thenable
         return unless state.isComplete()
         rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
         unless rejects.length
-          rejects = state.aborted.map (a) -> a.error
+          rejects = state.aborted.map (a) -> a.value
         composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
         return
       composite
@@ -134,7 +134,7 @@ class Thenable
           return
         rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
         unless rejects.length
-          rejects = state.aborted.map (a) -> a.error
+          rejects = state.aborted.map (a) -> a.value
         composite.reject rejects[rejects.length - 1]
         return
       Collection tasks, composite, subChoice, data, onResult
