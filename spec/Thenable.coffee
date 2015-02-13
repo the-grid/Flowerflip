@@ -384,6 +384,18 @@ describe 'Thenable named promises', ->
         done()
         true
 
+  describe 'all() with no tasks', ->
+    it 'should give error', (done) ->
+      t = Root()
+      t.deliver true
+      .then 'foo', ->
+        return false
+      .all 'empty-all', []
+      .finally (c, val) ->
+        chai.expect(val).to.be.instanceof Error
+        chai.expect(val.message).to.include 'No tasks'
+        done()
+
   describe 'getting attribute in consecutive choice', ->
     it 'should return value', (done) ->
       t = Root()

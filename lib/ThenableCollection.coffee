@@ -36,7 +36,7 @@ module.exports = (tasks, composite, choice, data, onResult) ->
     state.branches.push branch
 
   handleResult = (collection, idx, rChoice, value) ->
-    path = if choice then rChoice.toString() else ''
+    path = if rChoice then rChoice.toString() else ''
     collection[idx] = {} unless collection[idx]
     collection[idx][path] =
       choice: rChoice
@@ -51,7 +51,10 @@ module.exports = (tasks, composite, choice, data, onResult) ->
         return collection[i][keys[0]].value
       keys.map (k) -> collection[i][k].value
 
-  return onResult state unless tasks.length
+  unless tasks.length
+    handleResult state.rejected, 0, null, new Error "No tasks provided"
+    return
+
   tasks.forEach (t, i) ->
     return if state.finished
     unless typeof t is 'function'
