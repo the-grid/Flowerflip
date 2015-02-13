@@ -124,9 +124,10 @@ class BehaviorTree
       node.choices[sourcePath] = choice
     choice = node.choices[sourcePath]
     localPath = node.choices[sourcePath].toString()
+    return if choice.state in [State.ABORTED, State.RUNNING]
+    choice.state = State.RUNNING
     try
       val = node.callback choice, data
-      return if choice.state is State.ABORTED
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         # Thenable returned, make subtree
         choice.subtrees = [] unless choice.subtrees
