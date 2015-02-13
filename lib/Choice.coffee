@@ -220,18 +220,11 @@ class Choice
     blocks.filter (b) =>
       @attributes.blocksEaten.indexOf(b) is -1
 
-  expect: (value, callback, throwData = null) ->
-    try
-      if typeof value is 'function'
-        throwData = callback
-        callback = value
-        value = null
-        return callback chai.expect
-      callback chai.expect value
-    catch e
-      @set 'preconditionFailed', e
-      @set 'preconditionTarget', value
-      throw throwData or e
+  expect: (value, throwData = null) ->
+    @set 'preconditionFailedData', throwData if throwData
+    if typeof value is 'undefined'
+      return chai.expect
+    chai.expect value
 
   createChoice: (source, id, name) ->
     # Override in subclasses

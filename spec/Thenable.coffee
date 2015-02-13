@@ -29,6 +29,31 @@ describe 'Thenable named promises', ->
         chai.expect(choice.namedPath(true)).to.eql ['bar']
         done()
       t.deliver 'Hello'
+  describe 'on failed precondition in promise', ->
+    it 'should call the "else" callback with AssertionError', (done) ->
+      t = Root()
+      t.then 'foo', (choice, val) ->
+        choice.expect(val).to.equal 'World'
+      .else 'bar', (choice, e) ->
+        chai.expect(choice.path).to.eql ['root', 'foo', 'bar']
+        chai.expect(e.message).to.equal "expected 'Hello' to equal 'World'"
+        chai.expect(choice.namedPath()).to.eql []
+        chai.expect(choice.namedPath(true)).to.eql ['bar']
+        done()
+      t.deliver 'Hello'
+  describe 'with anonymous thenable', ->
+  describe 'on failed precondition in promise', ->
+    it 'should call the "else" callback with throwVal', (done) ->
+      t = Root()
+      t.then 'foo', (choice, val) ->
+        choice.expect(val, val).to.equal 'World'
+      .else 'bar', (choice, e) ->
+        chai.expect(choice.path).to.eql ['root', 'foo', 'bar']
+        chai.expect(e).to.equal 'Hello'
+        chai.expect(choice.namedPath()).to.eql []
+        chai.expect(choice.namedPath(true)).to.eql ['bar']
+        done()
+      t.deliver 'Hello'
   describe 'with anonymous thenable', ->
     it 'should resolve', (done) ->
       t = Root()

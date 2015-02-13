@@ -2,8 +2,7 @@ module.exports = (choice, data) ->
   tree = choice.continue 'color'
   tree.deliver data
   .then 'user', (c, d) ->
-    c.expect d.config.color, (exp) ->
-      exp.to.be.a 'string'
+    c.expect(d.config.color).to.be.a 'string'
     c.addPath d.config.color
     d.config.color
   .else 'derived', (c, d) ->

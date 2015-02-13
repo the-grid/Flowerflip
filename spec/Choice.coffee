@@ -225,50 +225,28 @@ describe 'Choice node API', ->
   describe 'assertion handling', ->
     it 'should return a chai helper', (done) ->
       c = new Choice 'expecter'
-      foo = false
-      c.expect foo, (expect) ->
-        expect.to.be.a 'boolean'
-        done()
+      exp = c.expect()
+      chai.expect(exp).to.be.a 'function'
+      done()
 
     it 'should store the assertion to the choice', (done) ->
       c = new Choice 'expecter'
-      foo = 'string'
+      foo = 'bar'
       try
-        c.expect foo, (expect) ->
-          expect.to.be.a 'boolean'
+        c.expect(foo).to.be.a 'boolean'
       catch e
-        failure = c.get 'preconditionFailed'
-        target = c.get 'preconditionTarget'
-        chai.expect(failure).to.be.an 'object'
-        chai.expect(failure.message).to.equal "expected 'string' to be a boolean"
-        chai.expect(failure).to.equal e
-        chai.expect(target).to.equal foo
+        chai.expect(e.message).to.equal "expected 'bar' to be a boolean"
         done()
 
     it 'should allow passing in a value to throw', (done) ->
       c = new Choice 'expecter'
       foo = 'bar'
       try
-        c.expect (expect) ->
-          expect(foo).to.be.a 'boolean'
-        , foo
+        c.expect(foo, foo).to.be.a 'boolean'
       catch e
-        failure = c.get 'preconditionFailed'
-        chai.expect(failure.message).to.equal "expected 'bar' to be a boolean"
-        chai.expect(e).to.equal foo
-        done()
-
-    it 'should allow passing in a value to throw', (done) ->
-      c = new Choice 'expecter'
-      foo = 'bar'
-      try
-        c.expect foo, (expect) ->
-          expect.to.be.a 'boolean'
-        , foo
-      catch e
-        failure = c.get 'preconditionFailed'
-        chai.expect(failure.message).to.equal "expected 'bar' to be a boolean"
-        chai.expect(e).to.equal foo
+        data = c.get 'preconditionFailedData'
+        chai.expect(e.message).to.equal "expected 'bar' to be a boolean"
+        chai.expect(data).to.equal foo
         done()
 
   describe 'handling block type hierarchy', ->

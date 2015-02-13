@@ -19,6 +19,7 @@ trees = 0
 
 Thenable = require './Thenable'
 {State, isActive} = require './state'
+chai = require 'chai'
 
 class BehaviorTree
   constructor: (@name, @options = {}) ->
@@ -157,6 +158,10 @@ class BehaviorTree
     catch e
       # Rejected
       return if choice.state is State.ABORTED
+      if e instanceof chai.AssertionError
+        choice.set 'preconditionFailed', e
+        throwVal = choice.get 'preconditionFailedData'
+        e = throwVal or e
       choice.set 'data', e
       choice.state = State.REJECTED
       @resolve node.id, sourcePath
