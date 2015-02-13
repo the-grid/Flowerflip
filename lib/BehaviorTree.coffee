@@ -6,6 +6,7 @@ PositiveResults = [
   'finally'
   'contest'
   'race'
+  'maybe'
   'root'
 ]
 NegativeResults = [

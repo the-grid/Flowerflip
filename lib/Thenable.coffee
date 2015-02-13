@@ -68,6 +68,29 @@ class Thenable
 
     promise
 
+  maybe: (name, tasks) ->
+    do @checkFinal
+    if typeof name isnt 'string'
+      tasks = name
+      name = null
+
+    callback = (choice, data) ->
+      composite = choice.continue name
+      subChoice = composite.tree.nodes['root'].choices['']
+      Collection tasks, composite, subChoice, data, (state, latest) ->
+        return unless state.isComplete()
+        if state.countFulfilled() > 0
+          composite.deliver state.getFulfilled()
+          return
+        composite.deliver data
+        return
+      composite
+    id = @tree.registerNode @id, name, 'maybe', callback
+    promise = new Thenable @tree
+    promise.id = id
+
+    promise
+
   race: (name, tasks) ->
     do @checkFinal
     if typeof name isnt 'string'

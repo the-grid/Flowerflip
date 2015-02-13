@@ -215,6 +215,42 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.equal 3
         done()
 
+  describe 'with maybe & return values', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree 'a'
+        tree.deliver data
+        tree.then (c, d) ->
+          d * multiplier
+      t = Root()
+      t.deliver 5
+      .maybe [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ]
+      .finally (c, res) ->
+        chai.expect(res).to.eql [10, 15]
+        done()
+
+  describe 'with maybe & abort', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree 'a'
+        tree.deliver data
+        tree.then (c, d) ->
+          d * multiplier
+          c.abort "I would've returned #{d*multiplier}, but chose not to"
+      t = Root()
+      t.deliver 5
+      .maybe [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ]
+      .finally (c, res) ->
+        chai.expect(res).to.be.a 'number'
+        chai.expect(res).to.equal 5
+        done()
+
   describe 'with some & return values', ->
     it 'should resolve', (done) ->
       t = Root()
