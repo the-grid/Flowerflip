@@ -384,6 +384,30 @@ describe 'Thenable named promises', ->
         chai.expect(choice.namedPath()).to.eql ['w-image', 'portrait', 'faces', 'cropping']
         done()
         true
+
+  describe 'getting attribute in consecutive choice', ->
+    it 'should return value', (done) ->
+      t = Root()
+      t.then 'foo', (choice, val) ->
+        choice.set 'val1', 'baz'
+        null
+      .finally 'bar', (choice, val) ->
+        chai.expect(val).to.be.a 'null'
+        chai.expect(choice.get('val1')).to.equal 'baz'
+        done()
+      t.deliver 'inpt1'
+  describe 'getting non-existant attribute in consecutive choice', ->
+    it 'should return value', (done) ->
+      t = Root()
+      t.then 'foo', (choice, val) ->
+        choice.set 'val1', 'baz'
+        null
+      .finally 'bar', (choice, val) ->
+        chai.expect(val).to.be.a 'null'
+        chai.expect(choice.get('non-existant2')).to.equal null
+        done()
+      t.deliver 'inpt2'
+
 ###
 articleComponent = (ctx, item, promise) ->
   block = ctx.getBlock (b) ->
