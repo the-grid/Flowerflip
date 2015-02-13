@@ -32,10 +32,12 @@ class BehaviorTree
         destinations: []
         branches: []
     @parentOnBranch = null
+    @onAbort = null
 
   onSubtree: (choice, name, continuation, callback) =>
     tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
+    tree.onAbort = choice.onAbort or @onAbort
     t = new Thenable tree
     choice.subtrees = [] unless choice.subtrees
     choice.subtrees.push tree
@@ -47,6 +49,7 @@ class BehaviorTree
     node.choices[''].onSubtree = tree.onSubtree
     node.choices[''].parentSource = choice
     node.choices[''].parentOnBranch = @parentOnBranch
+    node.choices[''].onAbort = @onAbort
     node.choices[''].continuation = continuation
 
     callback t, tree if callback
@@ -121,6 +124,7 @@ class BehaviorTree
       choice.onBranch = @onBranch
       choice.onSubtree = @onSubtree
       choice.parentOnBranch = @parentOnBranch
+      choice.onAbort = @onAbort
       node.choices[sourcePath] = choice
     choice = node.choices[sourcePath]
     localPath = node.choices[sourcePath].toString()
@@ -184,6 +188,7 @@ class BehaviorTree
     choice.onBranch = @onBranch
     choice.onSubtree = @onSubtree
     choice.parentOnBranch = @parentOnBranch
+    choice.onAbort = @onAbort
     choice.parentSource = @nodes['root'].parentSource
     if typeof data is 'object' and toString.call(data) isnt '[object Array]'
       for key, val of data

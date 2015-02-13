@@ -68,6 +68,7 @@ class Choice
     branch.state = State.PENDING
     branch.onBranch = @onBranch
     branch.parentOnBranch = @parentOnBranch
+    branch.onAbort = @onAbort
     clone = @toJSON()
     for key, val of clone
       continue if key in ['path', 'id', 'aborted']
@@ -77,9 +78,11 @@ class Choice
 
     branch
 
-  abort: (reason) ->
+  abort: (reason, onBranch) ->
     @set 'aborted', reason
     @state = State.ABORTED
+    return unless @onAbort
+    @onAbort @, reason, onBranch
 
   registerSubleaf: (leaf, fulfilled) ->
     @subLeaves = [] unless @subLeaves

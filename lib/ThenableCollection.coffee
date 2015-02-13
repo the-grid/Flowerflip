@@ -24,16 +24,27 @@ module.exports = (tasks, composite, choice, data, onResult) ->
         continue unless r
         rej += Object.keys(r).length
       rej
+    countAborted: ->
+      aborted = state.aborted.filter (a) -> not a.branched
+      aborted.length
     isComplete: ->
-      todo = tasks.length + state.branches.length = state.aborted.length
+      todo = tasks.length + state.branches.length - state.aborted.length
       done = state.countFulfilled() + state.countRejected()
       done >= todo
 
   composite.tree.parentOnBranch = (tree, orig, branch, callback) ->
     unless orig.state is State.ABORTED
-      state.aborted.push orig
-      orig.abort "Branched off to #{branch}"
+      orig.abort "Branched off to #{branch}", true
     state.branches.push branch
+
+  composite.tree.onAbort = (rChoice, reason, branched) ->
+    error = new Error reason
+    state.aborted.push
+      branched: branched
+      choice: rChoice
+      reason: reason
+      error: error
+    onResult state, error unless branched
 
   handleResult = (collection, idx, rChoice, value) ->
     path = if rChoice then rChoice.toString() else ''

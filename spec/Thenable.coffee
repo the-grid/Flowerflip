@@ -181,6 +181,24 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.equal 10
         done()
 
+  describe 'with race & abort', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree 'a'
+        tree.deliver data
+        tree.then (c, d) ->
+          d * multiplier
+          c.abort "I would've returned #{d*multiplier}, but chose not to"
+      t = Root()
+      t.deliver 5
+      .race [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ]
+      .finally (c, res) ->
+        chai.expect(res).to.be.instanceof Error
+        done()
+
   describe 'with some & return values', ->
     it 'should resolve', (done) ->
       t = Root()
