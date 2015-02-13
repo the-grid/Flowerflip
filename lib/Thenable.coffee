@@ -25,11 +25,11 @@ class Thenable
       Collection tasks, composite, subChoice, data, (state, latest) ->
         if state.countRejected() > 0
           state.finished = true
-          rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
-          composite.reject rejects[0]
+          rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
+          composite.reject rejects[0][0] or rejects[0]
           return
         return unless state.isComplete()
-        composite.deliver state.fulfilled
+        composite.deliver state.getFulfilled()
       composite
     id = @tree.registerNode @id, name, 'all', callback
     promise = new Thenable @tree
@@ -49,10 +49,10 @@ class Thenable
       Collection tasks, composite, subChoice, data, (state, latest) ->
         return unless state.isComplete()
         if state.countFulfilled() > 0
-          composite.deliver state.fulfilled
+          composite.deliver state.getFulfilled()
           return
-        rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
-        composite.reject rejects[rejects.length - 1]
+        rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
+        composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
       composite
     id = @tree.registerNode @id, name, 'some', callback
     promise = new Thenable @tree
@@ -72,12 +72,12 @@ class Thenable
       Collection tasks, composite, subChoice, data, (state, latest) ->
         if state.countFulfilled() > 0
           state.finished = true
-          fulfills = state.fulfilled.filter (f) -> typeof f isnt 'undefined'
-          composite.deliver fulfills[0]
+          fulfills = state.getFulfilled().filter (f) -> typeof f isnt 'undefined'
+          composite.deliver fulfills[0][0] or fulfills[0]
           return
         return unless state.isComplete()
-        rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
-        composite.reject rejects[rejects.length - 1]
+        rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
+        composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
       composite
     id = @tree.registerNode @id, name, 'race', callback
     promise = new Thenable @tree
@@ -109,15 +109,17 @@ class Thenable
         if state.countFulfilled() > 0
           fulfills = []
           for f, i in state.fulfilled
-            continue if typeof f is 'undefined'
-            fulfills.push
-              choice: state.choices[i]
-              value: f
+            continue unless f
+            for path, option of f
+              fulfills.push
+                path: path
+                choice: option.choice
+                value: option.value
           chosen = score subChoice, fulfills
           chosenSolutions.push chosen
           accepted = resolve subChoice, chosen
           return Collection tasks, composite, subChoice, data, onResult unless accepted
-          composite.deliver chosenSolutions
+          composite.deliver chosenSolutions.map (c) -> c.value
           return
         rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1]

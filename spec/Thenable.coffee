@@ -121,7 +121,7 @@ describe 'Thenable named promises', ->
         chai.expect(data).to.eql [1,2,3]
         data
       .all [n1, n2, n3]
-      .then 'all-nope', ->
+      .then 'all-nope', (choice, data) ->
         {}
       .else 'all-nope-else', (choice, e) ->
         chai.expect(e.data).to.eql
@@ -271,10 +271,9 @@ describe 'Thenable named promises', ->
         multiply.bind @, 2
         multiply.bind @, 3
       ], (c, results) ->
-        paths = results.map (r) -> ''+r.choice
+        paths = results.map (r) -> r.path
         idx = paths.indexOf 'root-3-then'
-        res = results.map (r) -> r.value
-        res[idx]
+        results[idx]
       .then (c, res) ->
         chai.expect(res).to.eql [15]
         done()

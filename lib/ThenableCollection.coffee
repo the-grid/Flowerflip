@@ -10,22 +10,19 @@ module.exports = (tasks, composite, choice, data, onResult) ->
     aborted: []
     fulfilled: []
     rejected: []
-    choices: []
+    getFulfilled: -> getResults state.fulfilled
+    getRejected: -> getResults state.rejected
     countFulfilled: ->
       full = 0
       for f in state.fulfilled
-        if f instanceof Array
-          full += f.length
-          continue
-        full++
+        continue unless f
+        full += Object.keys(f).length
       full
     countRejected: ->
       rej = 0
       for r in state.rejected
-        if r instanceof Array
-          rej += r.length
-          continue
-        rej++
+        continue unless r
+        rej += Object.keys(r).length
       rej
     isComplete: ->
       todo = tasks.length + state.branches.length = state.aborted.length
@@ -38,33 +35,42 @@ module.exports = (tasks, composite, choice, data, onResult) ->
       orig.abort "Branched off to #{branch}"
     state.branches.push branch
 
+  handleResult = (collection, idx, rChoice, value) ->
+    path = if choice then rChoice.toString() else ''
+    collection[idx] = {} unless collection[idx]
+    collection[idx][path] =
+      choice: rChoice
+      value: value
+    onResult state, value
+
+  getResults = (collection) ->
+    collection.map (f, i) ->
+      return unless f
+      keys = Object.keys f
+      if keys.length is 1
+        return collection[i][keys[0]].value
+      keys.map (k) -> collection[i][k].value
+
   return onResult state unless tasks.length
   tasks.forEach (t, i) ->
     return if state.finished
     unless typeof t is 'function'
       e = new Error "Task #{i} of #{choice} is not a function"
-      state.rejected[i] = if state.rejected[i] then [state.rejected[i], e] else e
-      onResult state, e
+      handleResult state.rejected, i, null, e
       return
 
     try
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (p, d) ->
-          state.choices[i] = if state.choices[i] then [state.choices[i], p] else p
-          state.fulfilled[i] = if state.fulfilled[i] then [state.fulfilled[i], d] else d
           p.continuation = val.tree.continuation
           choice.registerSubleaf p, true
-          onResult state, d
+          handleResult state.fulfilled, i, p, d
         val.else (p, e) ->
-          state.choices[i] = if state.choices[i] then [state.choices[i], p] else p
-          state.rejected[i] = if state.rejected[i] then [state.rejected[i], e] else e
           p.continuation = val.tree.continuation
           choice.registerSubleaf p, false
-          onResult state, e
+          handleResult state.rejected, i, p, e
         return
-      state.fulfilled[i] = if state.fulfilled[i] then [state.fulfilled[i], val] else val
-      onResult state, val
+      handleResult state.fulfilled, i, null, val
     catch e
-      state.rejected[i] = if state.rejected[i] then [state.rejected[i], e] else e
-      onResult state, e
+      handleResult state.rejected, i, null, e
