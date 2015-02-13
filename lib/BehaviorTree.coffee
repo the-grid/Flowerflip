@@ -17,7 +17,7 @@ NegativeResults = [
 trees = 0
 
 Thenable = require './Thenable'
-{State} = require './state'
+{State, isActive} = require './state'
 
 class BehaviorTree
   constructor: (@name, @options = {}) ->
@@ -137,13 +137,13 @@ class BehaviorTree
         choice.subtrees = [] unless choice.subtrees
         choice.subtrees.push val.tree
         val.then (c, r) =>
-          choice.set 'data', r
+          choice.set 'data', r if isActive choice
           choice.state = State.FULFILLED
           c.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf c, true
           @resolve node.id, sourcePath
         val.else (c, e) =>
-          choice.set 'data', e
+          choice.set 'data', e if isActive choice
           choice.state = State.REJECTED
           c.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf c, false
@@ -193,7 +193,7 @@ class BehaviorTree
     if typeof data is 'object' and toString.call(data) isnt '[object Array]'
       for key, val of data
         choice.set key, val
-    choice.set 'data', data
+    choice.set 'data', data if isActive choice
     choice.state = state
     node.choices[''] = choice
     @resolve node.id, ''
