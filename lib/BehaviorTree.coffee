@@ -36,7 +36,7 @@ class BehaviorTree
   onSubtree: (choice, name, continuation, callback) =>
     tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
-    tree.continuation = continuation
+    choice.continuation = continuation
     t = new Thenable tree
     choice.subtrees = [] unless choice.subtrees
     choice.subtrees.push tree
