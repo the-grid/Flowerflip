@@ -22,7 +22,7 @@ describe 'Solving a layout problem', ->
           ]
         ]
       t = Root()
-      layout = require './fixtures/helloworld/index'
+      layout = require '../examples/helloworld/index'
       t.deliver page
       layout t
       .finally (c, d) ->
