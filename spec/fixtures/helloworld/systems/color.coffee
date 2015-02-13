@@ -11,5 +11,5 @@ module.exports = (choice, data) ->
     c.addPath color
     color
   .then (c, d) ->
-    choice.set 'color', d
+    choice.set 'system:color:id', d
     data
