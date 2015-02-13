@@ -318,3 +318,24 @@ describe 'Choice node API', ->
         ggc = new Choice gc, 'g-grand-child'
         chai.expect(ggc.get('color2')).to.be.a 'null'
 
+    describe 'get/set globals', ->
+      beforeEach ->
+        Choice.reset()
+      describe 'getting global', ->
+        it 'should return value', (done) ->
+          a = new Choice 'a'
+          a.setGlobal 'foo', 'bar'
+          b = new Choice 'b'
+          val = b.getGlobal 'foo'
+          chai.expect(val).to.equal 'bar'
+          done()
+      describe 'setting already set global', ->
+        it 'should fail', (done) ->
+          a = new Choice 'a'
+          a.setGlobal 'foo', 'bar'
+          b = new Choice 'b'
+          func = -> b.setGlobal 'foo', 'baz'
+          chai.expect(func).to.throw Error
+          val = b.getGlobal 'foo'
+          chai.expect(val).to.equal 'bar'
+          done()
