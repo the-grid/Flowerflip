@@ -72,7 +72,6 @@ describe 'Subtrees', ->
         t = subtree.then 'tripled', (c, d) ->
           chai.expect(c.get('non-existant1')).to.equal null
           chai.expect(c.get('existant2')).to.equal 'foo'
-          console.log d*3
           d * 3
 
       t = Root()
