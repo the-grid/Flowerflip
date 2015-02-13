@@ -38,7 +38,7 @@ module.exports = (tasks, composite, choice, data, onResult) ->
       orig.abort "Branched off to #{branch}"
     state.branches.push branch
 
-  return onFulfilled state unless tasks.length
+  return onResult state unless tasks.length
   tasks.forEach (t, i) ->
     return if state.finished
     unless typeof t is 'function'
