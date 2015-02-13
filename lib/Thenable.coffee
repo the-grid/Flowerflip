@@ -95,10 +95,10 @@ class Thenable
 
     unless typeof resolve is 'function'
       # Auto-break unless until callback is provided
-      resolve = (chosen) -> true
+      resolve = (c, chosenSolutions) -> true
 
     unless typeof score is 'function'
-      score = (fulfills) -> fulfills[0]
+      score = (c, fulfills, chosenSolutions) -> fulfills[0]
 
     callback = (choice, data) ->
       composite = choice.continue name
@@ -115,9 +115,9 @@ class Thenable
                 path: path
                 choice: option.choice
                 value: option.value
-          chosen = score subChoice, fulfills
+          chosen = score subChoice, fulfills, chosenSolutions
           chosenSolutions.push chosen
-          accepted = resolve subChoice, chosen
+          accepted = resolve subChoice, chosenSolutions
           return Collection tasks, composite, subChoice, data, onResult unless accepted
           composite.deliver chosenSolutions.map (c) -> c.value
           return
