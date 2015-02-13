@@ -30,6 +30,7 @@ class Thenable
           return
         return unless state.isComplete()
         composite.deliver state.getFulfilled()
+        return
       composite
     id = @tree.registerNode @id, name, 'all', callback
     promise = new Thenable @tree
@@ -53,6 +54,7 @@ class Thenable
           return
         rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
+        return
       composite
     id = @tree.registerNode @id, name, 'some', callback
     promise = new Thenable @tree
@@ -78,6 +80,7 @@ class Thenable
         return unless state.isComplete()
         rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
+        return
       composite
     id = @tree.registerNode @id, name, 'race', callback
     promise = new Thenable @tree
@@ -123,6 +126,7 @@ class Thenable
           return
         rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
         composite.reject rejects[rejects.length - 1]
+        return
       Collection tasks, composite, subChoice, data, onResult
       composite
     id = @tree.registerNode @id, name, 'contest', callback
