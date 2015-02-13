@@ -1,6 +1,8 @@
 {State, ensureActive} = require './state'
 chai = require 'chai'
 
+globalValues = {}
+
 class Choice
   constructor: (source, id, @name) ->
     unless id
@@ -24,6 +26,7 @@ class Choice
       items: []
       itemsEaten: []
       blocksEaten: []
+      globalsSet: []
       paths: []
 
   namedPath: (includeSelf = false) ->
@@ -114,6 +117,15 @@ class Choice
     if name in ['itemsEaten', 'blocksEaten']
       throw new Error "#{name} attribute must be modified via the eat method"
     @attributes[name] = value
+
+  getGlobal: (name) ->
+    globalValues[name]
+
+  setGlobal: (name, value) ->
+    ensureActive @
+    if globalValues[name]
+      throw new Error "Global value '#{name}' is already set"
+    globalValues[name] = value
 
   getItem: (callback) ->
     ensureActive @
@@ -234,3 +246,5 @@ class Choice
   toString: -> @path.join '-'
 
 module.exports = Choice
+module.exports.reset = ->
+  globalValues = {}

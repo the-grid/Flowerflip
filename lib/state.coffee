@@ -1,11 +1,12 @@
 exports.State =
   PENDING: 0
-  FULFILLED: 1
-  REJECTED: 2
-  ABORTED: 3
+  RUNNING: 1
+  FULFILLED: 2
+  REJECTED: 3
+  ABORTED: 4
 
 exports.isActive = (entity) ->
-  entity.state is exports.State.PENDING
+  entity.state in [exports.State.PENDING, exports.State.RUNNING]
 
 exports.ensureActive = (entity) ->
   unless exports.isActive entity
