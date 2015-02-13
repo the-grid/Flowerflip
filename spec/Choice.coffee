@@ -222,6 +222,29 @@ describe 'Choice node API', ->
 
       done()
 
+  describe 'assertion handling', ->
+    it 'should return a chai helper', (done) ->
+      c = new Choice 'expecter'
+      foo = false
+      c.expect foo, (expect) ->
+        expect.to.be.a 'boolean'
+        done()
+
+    it 'should store the assertion to the choice', (done) ->
+      c = new Choice 'expecter'
+      foo = 'string'
+      try
+        c.expect foo, (expect) ->
+          expect.to.be.a 'boolean'
+      catch e
+        failure = c.get 'preconditionFailed'
+        target = c.get 'preconditionTarget'
+        chai.expect(failure).to.be.an 'object'
+        chai.expect(failure.message).to.equal "expected 'string' to be a boolean"
+        chai.expect(failure).to.equal e
+        chai.expect(target).to.equal foo
+        done()
+
   describe 'handling block type hierarchy', ->
     c = new Choice 'typer'
     it 'should recognize anything as a block', ->

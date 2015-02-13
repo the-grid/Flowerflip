@@ -1,4 +1,5 @@
 {State, ensureActive} = require './state'
+chai = require 'chai'
 
 class Choice
   constructor: (source, id, @name) ->
@@ -203,6 +204,15 @@ class Choice
       blocks = item.content
     blocks.filter (b) =>
       @attributes.blocksEaten.indexOf(b) is -1
+
+  expect: (value, callback) ->
+    try
+      return value chai.expect unless callback
+      callback chai.expect value
+    catch e
+      @set 'preconditionFailed', e
+      @set 'preconditionTarget', value
+      throw e
 
   createChoice: (source, id, name) ->
     # Override in subclasses
