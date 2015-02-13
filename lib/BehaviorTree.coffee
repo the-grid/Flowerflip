@@ -36,7 +36,6 @@ class BehaviorTree
   onSubtree: (choice, name, continuation, callback) =>
     tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
-    choice.continuation = continuation
     t = new Thenable tree
     choice.subtrees = [] unless choice.subtrees
     choice.subtrees.push tree
@@ -48,6 +47,7 @@ class BehaviorTree
     node.choices[''].onSubtree = tree.onSubtree
     node.choices[''].parentSource = choice
     node.choices[''].parentOnBranch = @parentOnBranch
+    node.choices[''].continuation = continuation
 
     callback t, tree if callback
     t
@@ -135,13 +135,13 @@ class BehaviorTree
         val.then (c, r) =>
           choice.set 'data', r
           choice.state = State.FULFILLED
-          c.continuation = val.tree.continuation
+          c.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf c, true
           @resolve node.id, sourcePath
         val.else (c, e) =>
           choice.set 'data', e
           choice.state = State.REJECTED
-          c.continuation = val.tree.continuation
+          c.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf c, false
           @resolve node.id, sourcePath
         return
@@ -155,6 +155,11 @@ class BehaviorTree
       choice.set 'data', e
       choice.state = State.REJECTED
       @resolve node.id, sourcePath
+
+  getRoot: ->
+    @nodes['root']
+  getRootChoice: ->
+    @getRoot().choices['']
 
   resolve: (id, sourcePath = '') ->
     node = @nodes[id]

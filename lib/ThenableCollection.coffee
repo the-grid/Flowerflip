@@ -66,11 +66,11 @@ module.exports = (tasks, composite, choice, data, onResult) ->
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (p, d) ->
-          p.continuation = val.tree.continuation
+          p.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf p, true
           handleResult state.fulfilled, i, p, d
         val.else (p, e) ->
-          p.continuation = val.tree.continuation
+          p.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf p, false
           handleResult state.rejected, i, p, e
         return
