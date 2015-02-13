@@ -25,7 +25,8 @@ describe 'Solving a layout problem', ->
       layout = require './fixtures/helloworld/index'
       t.deliver page
       layout t
-      .then (c, d) ->
+      .finally (c, d) ->
+        chai.expect(d).to.be.a 'string'
         chai.expect(c.namedPath()).to.eql [
           'color'
           'user'
@@ -35,7 +36,7 @@ describe 'Solving a layout problem', ->
           'directed'
           'sections'
         ]
-        chai.expect(d).to.be.a 'string'
         clean = d.replace /\n/g, ''
         chai.expect(clean).to.equal '<section class="red directed"><article class="post right"><p>Foo</p></article><article class="post right"><h1>Bar</h1></article></section>'
         return done()
+
