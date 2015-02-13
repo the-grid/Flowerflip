@@ -2,8 +2,8 @@ module.exports = (choice, data) ->
   tree = choice.continue 'color'
   tree.deliver data
   .then 'user', (c, d) ->
-    unless d.config.color
-      throw new Error 'No color selected'
+    c.expect d.config.color, (exp) ->
+      exp.to.be.a 'string'
     c.addPath d.config.color
     d.config.color
   .else 'derived', (c, d) ->

@@ -3,7 +3,8 @@ titlesComponent = (type, choice, item) ->
   t.deliver item
   .then (c, d) ->
     block = choice.getBlock item, (b) ->
-      b.type is type
+      c.expect b.type, (exp) ->
+        exp.to.equal type
     choice.eatBlock block
     block
   .then (c, b) ->
@@ -14,7 +15,8 @@ textComponent = (choice, item) ->
   t.deliver item
   .then (c, d) ->
     block = choice.getBlock item, (b) ->
-      b.type is 'text'
+      c.expect b.type, (exp) ->
+        exp.to.equal 'text'
     choice.eatBlock block
     block
   .then (c, b) ->
@@ -26,7 +28,8 @@ module.exports = (choice, data) ->
   .then (c, d) ->
     item = c.getItem (i) ->
       i.content.length is 1
-    throw new Error called + ' No item' unless item
+    c.expect item, (exp) ->
+      exp.to.be.an 'object'
     c.set 'item', item
     c.branch 'left', (b) ->
       b.set 'variant', 'right'

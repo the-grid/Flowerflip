@@ -9,10 +9,11 @@ module.exports = (choice, data) ->
   tree = choice.continue 'layout'
   tree.deliver data
   .then 'user', (c, d) ->
-    unless d.config.layout
-      throw new Error 'No layout selected'
-    unless layouts[d.config.layout]
-      throw new Error "Unknown layout #{d.config.layout}"
+    c.expect d.config.layout, (exp) ->
+      exp.to.be.a 'string'
+    c.expect layouts[d.config.layout], (exp) ->
+      exp.to.be.an 'array'
+      exp.not.to.be.empty
     choice.set 'system:layout:id', d.config.layout
     c.addPath d.config.layout
     layouts[d.config.layout]
