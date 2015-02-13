@@ -41,6 +41,12 @@ module.exports = (tasks, composite, choice, data, onResult) ->
   return onFulfilled state unless tasks.length
   tasks.forEach (t, i) ->
     return if state.finished
+    unless typeof t is 'function'
+      e = new Error "Task #{i} of #{choice} is not a function"
+      state.rejected[i] = if state.rejected[i] then [state.rejected[i], e] else e
+      onResult state, e
+      return
+
     try
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
