@@ -246,7 +246,7 @@ describe 'Thenable named promises', ->
         multiply.bind @, 2
         multiply.bind @, 3
       ]
-      .finally (c, res) ->
+      .else (c, res) ->
         chai.expect(res).to.be.a 'number'
         chai.expect(res).to.equal 5
         done()

@@ -82,7 +82,7 @@ class Thenable
         if state.countFulfilled() > 0
           composite.deliver state.getFulfilled()
           return
-        composite.deliver data
+        composite.reject data
         return
       composite
     id = @tree.registerNode @id, name, 'maybe', callback
