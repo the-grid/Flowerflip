@@ -38,6 +38,8 @@ class Choice
 
   addPath: (p) ->
     if p instanceof Array
+      unique = p.filter (path) => @attributes.paths.indexOf(path) is -1
+      return unless unique.length
       @addPath path for path in p
       return
     unless typeof p is 'string'
@@ -91,8 +93,7 @@ class Choice
     items = @availableItems()
     leafItems = leaf.availableItems()
 
-    paths = leaf.namedPath()
-    @addPath p for p in paths
+    @addPath leaf.namedPath()
 
     for i in items
       continue unless leafItems.indexOf(i) is -1

@@ -37,7 +37,25 @@ class SubtreeResults
         return collection[i][keys[0]].value
       keys.map (k) -> collection[i][k].value
 
-  handleResult: (collection, idx, choice, value, callback) ->
+  getBranches: ->
+    branches = []
+    handled = []
+    return branches unless @fulfilled.length
+    [first, rest...] = @fulfilled
+    for path, result of first
+      branch = []
+      branch[0] = result
+      unless rest.length
+        branches.push branch
+        continue
+      for t2, r2 of rest
+        for path2, result2 of r2
+          branch = branch.slice 0
+          branch[parseInt(t2)+1] = result2
+          branches.push branch
+    branches
+
+  handleResult: (collection, idx, choice, value, callback = ->) ->
     path = if choice then choice.toString() else ''
     collection[idx] = {} unless collection[idx]
     collection[idx][path] =

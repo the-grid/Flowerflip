@@ -133,7 +133,7 @@ describe 'Thenable named promises', ->
         th = Root()
         th.deliver data
         .then 'nope-1', (path, data) ->
-          e = new Error ""
+          e = new Error 'nope-1'
           e.data =
             yeps: data
             nopes: 1
@@ -142,7 +142,7 @@ describe 'Thenable named promises', ->
         Root()
         .deliver data
         .then 'nope-2', (path, data) ->
-          e = new Error ""
+          e = new Error 'nope-2'
           e.data =
             yeps: data
             nopes: 2
@@ -151,7 +151,7 @@ describe 'Thenable named promises', ->
         Root()
         .deliver data
         .then 'nope-3', (path, data) ->
-          e = new Error ""
+          e = new Error 'nope-3'
           e.data =
             yeps: data
             nopes: 3
@@ -178,7 +178,7 @@ describe 'Thenable named promises', ->
         true
 
   describe 'with all & branches', ->
-    it.skip 'should resolve with result per branch', (done) ->
+    it 'should resolve with result per branch', (done) ->
       brancher = (orig, data) ->
         subtree = orig.tree 'calc'
         subtree.deliver data
@@ -275,6 +275,32 @@ describe 'Thenable named promises', ->
       .finally (c, res) ->
         chai.expect(res).to.eql [10, 15]
         done()
+
+  describe 'with maybe & branched return values', ->
+    it 'should resolve', (done) ->
+      expected = [
+        [10, 15]
+        [10, 45]
+        [20, 15]
+        [20, 45]
+      ]
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree "a#{multiplier}"
+        tree.deliver data
+        tree.then (c, d) ->
+          c.branch 'regular', ->
+            d * multiplier
+          c.branch 'super', ->
+            d * multiplier * multiplier
+      t = Root()
+      t.deliver 5
+      .maybe [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ]
+      .finally (c, res) ->
+        chai.expect(res).to.eql expected.shift()
+        done() if expected.length is 0
 
   describe 'with maybe & abort', ->
     it 'should resolve', (done) ->
@@ -453,13 +479,13 @@ describe 'Thenable named promises', ->
       .else 'wo-image', ->
         return {}
       .then 'landscape', ->
-        throw new Error 'Not landscape'
+        throw new chai.AssertionError 'Not landscape'
       .else 'portrait', ->
         return {}
       .else 'square', ->
-        throw new Error 'Not square'
+        throw new chai.AssertionError 'Not square'
       .then 'large', ->
-        throw new Error 'Too small'
+        throw new chai.AssertionError 'Too small'
       .else 'small', ->
         return {}
       .always (choice, val) ->
@@ -474,11 +500,11 @@ describe 'Thenable named promises', ->
       .else 'wo-image', ->
         return {}
       .then 'landscape', ->
-        throw new Error 'Not landscape'
+        throw new chai.AssertionError 'Not landscape'
       .else 'portrait', ->
         return {}
       .else 'square', ->
-        throw new Error 'Not square'
+        throw new chai.AssertionError 'Not square'
       .then 'faces', (choice, data) ->
         t2 = Root()
         t2.deliver data
@@ -487,7 +513,7 @@ describe 'Thenable named promises', ->
         .then 'match-people', ->
           {}
         .then 'find-friends', ->
-          throw new Error 'Trying hard'
+          throw new chai.AssertionError 'Trying hard'
         .else 'no-friends', (path, faces) ->
           {}
       .always 'cropping', ->

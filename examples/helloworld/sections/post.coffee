@@ -4,6 +4,7 @@ titlesComponent = (type, choice, item) ->
   .then (c, d) ->
     block = choice.getBlock item, (b) ->
       c.expect(b.type).to.equal type
+    c.expect(block).to.be.an 'object'
     choice.eatBlock block
     block
   .then (c, b) ->
@@ -15,6 +16,7 @@ textComponent = (choice, item) ->
   .then (c, d) ->
     block = choice.getBlock item, (b) ->
       c.expect(b.type).to.equal 'text'
+    c.expect(block).to.be.an 'object'
     choice.eatBlock block
     block
   .then (c, b) ->
@@ -41,8 +43,8 @@ module.exports = (choice, data) ->
     textComponent
   ]
   .then (c, res) ->
-    results = res.filter (r) -> typeof r isnt 'undefined'
+    console.log res
     # Mark item as eaten upstream
     choice.eatItem c.get 'item'
     variant = c.get 'variant'
-    "<article class=\"post #{variant}\">#{results.join('\n')}</article>\n"
+    "<article class=\"post #{variant}\">#{res.join('\n')}</article>\n"
