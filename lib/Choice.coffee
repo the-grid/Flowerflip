@@ -222,8 +222,6 @@ class Choice
 
   expect: (value, throwData = null) ->
     @set 'preconditionFailedData', throwData if throwData
-    if typeof value is 'undefined'
-      return chai.expect
     chai.expect value
 
   createChoice: (source, id, name) ->
