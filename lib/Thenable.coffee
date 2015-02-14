@@ -155,10 +155,10 @@ class Thenable
           return Collection tasks, composite, subChoice, data, onResult unless accepted
           composite.deliver chosenSolutions.map (c) -> c.value
           return
-        rejects = state.rejected.filter (e) -> typeof e isnt 'undefined'
+        rejects = state.getRejected()
         unless rejects.length
-          rejects = state.aborted.map (a) -> a.value
-        composite.reject rejects[rejects.length - 1]
+          rejects = state.aborted
+        composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
         return
       Collection tasks, composite, subChoice, data, onResult
       composite
