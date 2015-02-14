@@ -1,4 +1,4 @@
 module.exports = [
-  require './color.coffee'
-  require './layout.coffee'
+  require './color'
+  require './layout'
 ]
