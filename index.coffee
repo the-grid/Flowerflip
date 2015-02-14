@@ -6,3 +6,4 @@ module.exports =
   BehaviorTree: require './lib/BehaviorTree'
   state: require './lib/state'
   tree: require './lib/tree'
+  poly: require './lib/poly'

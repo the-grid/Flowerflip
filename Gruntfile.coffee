@@ -89,7 +89,7 @@ module.exports = ->
   @registerTask 'build-helloworld', ['coffee:helloworld', 'browserify:helloworld']
   @registerTask 'build-lib', ['coffee:lib', 'browserify:lib']
 
-  @registerTask 'build', ['build-helloworld', 'build-lib']
+  @registerTask 'build', ['build-lib', 'build-helloworld']
 
   @registerTask 'test', [
     'coffeelint'
