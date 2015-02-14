@@ -113,9 +113,9 @@ describe 'Thenable named promises', ->
 
       y1 = (c, data) ->
         th = Root()
-        th.deliver data
         pr = th.then 'yep-1', ->
           1
+        th.deliver data
         pr
 
       y2 = (c, data) ->
@@ -169,7 +169,7 @@ describe 'Thenable named promises', ->
           yeps: [1,2,3]
           nopes: 1
         return e.data
-      .always (choice, data) ->
+      .finally (choice, data) ->
         chai.expect(choice.namedPath()).to.eql ['all-yep', 'all-nope-else']
         chai.expect(data).to.eql
           yeps: [1,2,3]

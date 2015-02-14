@@ -38,22 +38,26 @@ class SubtreeResults
       keys.map (k) -> collection[i][k].value
 
   getBranches: ->
-    branches = []
-    handled = []
-    return branches unless @fulfilled.length
-    [first, rest...] = @fulfilled
-    for path, result of first
-      branch = []
-      branch[0] = result
-      unless rest.length
-        branches.push branch
+    return [] unless @fulfilled.length
+    fulfilled = []
+    for r, t in @fulfilled
+      unless typeof r is 'object'
+        fulfilled[t] = [undefined]
         continue
-      for t2, r2 of rest
-        for path2, result2 of r2
-          branch = branch.slice 0
-          branch[parseInt(t2)+1] = result2
-          branches.push branch
-    branches
+      fulfilled[t] = Object.keys(r).map (k) -> r[k]
+
+    combine = (list) ->
+      prefixes = list[0]
+      return prefixes unless list.length > 1
+      combinations = combine list.slice 1
+      prefixes.reduce (memo, prefix) ->
+        memo.concat combinations.map (combination) -> [prefix].concat combination
+      , []
+
+    return [fulfilled[0]] if fulfilled.length is 1
+
+    f = combine fulfilled
+    return f
 
   handleResult: (collection, idx, choice, value, callback = ->) ->
     path = if choice then choice.toString() else ''

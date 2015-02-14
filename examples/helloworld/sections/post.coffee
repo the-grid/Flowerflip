@@ -43,7 +43,6 @@ module.exports = (choice, data) ->
     textComponent
   ]
   .then (c, res) ->
-    console.log res
     # Mark item as eaten upstream
     choice.eatItem c.get 'item'
     variant = c.get 'variant'
