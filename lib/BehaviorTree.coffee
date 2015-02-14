@@ -58,12 +58,10 @@ class BehaviorTree
     t
 
   onBranch: (orig, branch, callback) =>
-    unless @parentOnBranch
-      throw new Error "Tree #{@id} is not within a branchable context (some, all, contest, race)"
     originalNode = @nodes[orig.id]
     unless originalNode
       throw new Error "Source node #{orig.id} not found"
-    @parentOnBranch @, orig, branch, callback
+    @parentOnBranch @, orig, branch, callback if @parentOnBranch
     id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback, false
     sourcePath = if orig.source then orig.source.toString() else ''
     destPath = branch.toString()
@@ -73,6 +71,7 @@ class BehaviorTree
     originalNode.branches.push @nodes[id]
 
     # Trigger re-resolve to cause the new branch to be run
+    sourcePath = '' if originalNode.promiseSource is 'root'
     @resolve originalNode.promiseSource, sourcePath
 
   createId: (name, seq = 0) ->
@@ -159,10 +158,10 @@ class BehaviorTree
       # Rejected
       return if choice.state is State.ABORTED
       if e instanceof chai.AssertionError
-        choice.set 'preconditionFailed', e
+        choice.set 'preconditionFailed', e if isActive choice
         throwVal = choice.get 'preconditionFailedData'
         e = throwVal or e
-      choice.set 'data', e
+      choice.set 'data', e if isActive choice
       choice.state = State.REJECTED
       @resolve node.id, sourcePath
 
