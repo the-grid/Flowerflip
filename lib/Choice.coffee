@@ -221,7 +221,8 @@ class Choice
       @attributes.blocksEaten.indexOf(b) is -1
 
   expect: (value = undefined, throwData = null, message) ->
-    unless Object.keys(arguments).length
+    args = [].slice.call arguments
+    unless args.length
       return chai.expect
     @set 'preconditionFailedData', throwData if throwData
     chai.expect value, message
