@@ -220,9 +220,11 @@ class Choice
     blocks.filter (b) =>
       @attributes.blocksEaten.indexOf(b) is -1
 
-  expect: (value, throwData = null) ->
+  expect: (value = undefined, throwData = null, message) ->
+    unless Object.keys(arguments).length
+      return chai.expect
     @set 'preconditionFailedData', throwData if throwData
-    chai.expect value
+    chai.expect value, message
 
   createChoice: (source, id, name) ->
     # Override in subclasses

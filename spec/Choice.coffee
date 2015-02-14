@@ -227,6 +227,12 @@ describe 'Choice node API', ->
       c = new Choice 'expecter'
       exp = c.expect()
       chai.expect(exp).to.be.a 'function'
+      exp(true).to.equal true
+      done()
+
+    it 'should handle undefined value', (done) ->
+      c = new Choice 'expecter'
+      exp = c.expect(undefined).to.be.a 'undefined'
       done()
 
     it 'should store the assertion to the choice', (done) ->
