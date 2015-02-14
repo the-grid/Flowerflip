@@ -1,18 +1,13 @@
 Root = require './Root'
 
+# @callback = (err, html, details) ->
 exports.solvePage = (filter, page, options, callback) ->
   root = Root()
   root.deliver page
   filter root
   .finally (c, val) ->
-    if typeof val is 'object'
-      keys = Object.keys val
-      if keys.length > 0
-        result = val[keys[0]].value
-    else
-      result = val
-    return callback result if result instanceof Error
-    return callback null, [ result ]
+    return callback val, null, c if val instanceof Error
+    return callback null, val, c
 
 # Set up entrypoint expected by Poly solver
 exports.register = (filter) ->
