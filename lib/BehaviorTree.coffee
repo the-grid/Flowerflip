@@ -58,6 +58,9 @@ class BehaviorTree
     t
 
   onBranch: (orig, branch, callback) =>
+    #console.log "BRANCH #{branch} from #{orig}"
+    if orig.id is 'root'
+      throw new Error 'Cannot branch the root node'
     originalNode = @nodes[orig.id]
     unless originalNode
       throw new Error "Source node #{orig.id} not found"
@@ -114,6 +117,7 @@ class BehaviorTree
     id
 
   executeNode: (sourceChoice, id, data) ->
+    #console.log "EXEC #{sourceChoice} #{id} #{sourceChoice.state}"
     unless @nodes[id]
       throw new Error "Unknown node #{id}"
     node = @nodes[id]
@@ -139,20 +143,20 @@ class BehaviorTree
         choice.subtrees.push val.tree
         val.then (c, r) =>
           choice.set 'data', r if isActive choice
-          choice.state = State.FULFILLED
+          choice.state = State.FULFILLED if isActive choice
           c.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf c, true
           @resolve node.id, sourcePath
         val.else (c, e) =>
           choice.set 'data', e if isActive choice
-          choice.state = State.REJECTED
+          choice.state = State.REJECTED if isActive choice
           c.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf c, false
           @resolve node.id, sourcePath
         return
       # Straight-up value returned
-      choice.set 'data', val
-      choice.state = State.FULFILLED
+      choice.set 'data', val if isActive choice
+      choice.state = State.FULFILLED if isActive choice
       @resolve node.id, sourcePath
     catch e
       # Rejected
@@ -162,7 +166,7 @@ class BehaviorTree
         throwVal = choice.get 'preconditionFailedData'
         e = throwVal or e
       choice.set 'data', e if isActive choice
-      choice.state = State.REJECTED
+      choice.state = State.REJECTED if isActive choice
       @resolve node.id, sourcePath
 
   getRoot: ->
@@ -175,6 +179,7 @@ class BehaviorTree
     return unless node
     choice = node.choices[sourcePath]
     return unless choice
+    #console.log "RESOLVE #{sourcePath} #{id} #{choice.state}"
     return unless choice.state in [State.FULFILLED, State.REJECTED]
     val = choice.get 'data'
     throw val if node.type is 'finally' and choice.state is State.REJECTED

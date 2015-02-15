@@ -17,24 +17,23 @@ class Thenable
       name = null
 
     callback = (choice, data) ->
-      fulfilled = []
-      rejected = []
-      branches = []
-      composite = choice.continue name
-      subChoice = composite.tree.nodes['root'].choices['']
-      Collection tasks, composite, subChoice, data, (state, latest) ->
-        if state.countRejected() > 0
-          state.finished = true
-          rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
-          composite.reject rejects[0][0] or rejects[0]
+      subtree = choice.continue name
+      composite = subtree.then (subChoice, data) ->
+        Collection.run tasks, composite, subChoice, data, (state, latest) ->
+          if state.countRejected() > 0
+            state.finished = true
+            rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
+            composite.reject rejects[0][0] or rejects[0]
+            return
+          if state.countAborted() > 0
+            state.finished = true
+            composite.reject state.aborted[state.aborted.length - 1].value
+            return
+          return unless state.isComplete()
+          Collection.deliverBranches state, choice, subChoice, composite
           return
-        if state.countAborted() > 0
-          state.finished = true
-          composite.reject state.aborted[state.aborted.length - 1].value
-          return
-        return unless state.isComplete()
-        composite.deliver state.getFulfilled()
         return
+      subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'all', callback
     promise = new Thenable @tree
@@ -49,18 +48,20 @@ class Thenable
       name = null
 
     callback = (choice, data) ->
-      composite = choice.continue name
-      subChoice = composite.tree.nodes['root'].choices['']
-      Collection tasks, composite, subChoice, data, (state, latest) ->
-        return unless state.isComplete()
-        if state.countFulfilled() > 0
-          composite.deliver state.getFulfilled()
+      subtree = choice.continue name
+      composite = subtree.then (subChoice, data) ->
+        Collection.run tasks, composite, subChoice, data, (state, latest) ->
+          return unless state.isComplete()
+          if state.countFulfilled() > 0
+            Collection.deliverBranches state, choice, subChoice, composite
+            return
+          rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
+          unless rejects.length
+            rejects = state.aborted.map (a) -> a.value
+          composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
           return
-        rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
-        unless rejects.length
-          rejects = state.aborted.map (a) -> a.value
-        composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
         return
+      subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'some', callback
     promise = new Thenable @tree
@@ -75,15 +76,16 @@ class Thenable
       name = null
 
     callback = (choice, data) ->
-      composite = choice.continue name
-      subChoice = composite.tree.nodes['root'].choices['']
-      Collection tasks, composite, subChoice, data, (state, latest) ->
-        return unless state.isComplete()
-        if state.countFulfilled() > 0
-          composite.deliver state.getFulfilled()
+      subtree = choice.continue name
+      composite = subtree.then (subChoice, data) ->
+        Collection.run tasks, composite, subChoice, data, (state, latest) ->
+          return unless state.isComplete()
+          if state.countFulfilled() > 0
+            Collection.deliverBranches state, choice, subChoice, composite
+            return
+          composite.reject data
           return
-        composite.reject data
-        return
+      subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'maybe', callback
     promise = new Thenable @tree
@@ -100,7 +102,7 @@ class Thenable
     callback = (choice, data) ->
       composite = choice.continue name
       subChoice = composite.tree.nodes['root'].choices['']
-      Collection tasks, composite, subChoice, data, (state, latest) ->
+      Collection.run tasks, composite, subChoice, data, (state, latest) ->
         if state.countFulfilled() > 0
           state.finished = true
           fulfills = state.getFulfilled().filter (f) -> typeof f isnt 'undefined'
@@ -152,7 +154,9 @@ class Thenable
           chosen = score subChoice, fulfills, chosenSolutions
           chosenSolutions.push chosen
           accepted = resolve subChoice, chosenSolutions
-          return Collection tasks, composite, subChoice, data, onResult unless accepted
+          unless accepted
+            Collection.run tasks, composite, subChoice, data, onResult
+            return
           composite.deliver chosenSolutions.map (c) -> c.value
           return
         rejects = state.getRejected()
@@ -160,7 +164,7 @@ class Thenable
           rejects = state.aborted
         composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
         return
-      Collection tasks, composite, subChoice, data, onResult
+      Collection.run tasks, composite, subChoice, data, onResult
       composite
     id = @tree.registerNode @id, name, 'contest', callback
     promise = new Thenable @tree
@@ -218,9 +222,10 @@ class Thenable
       return
     node = @tree.nodes[@id]
     return unless node
-    return unless node.choice
-    node.choice.set 'data', value
-    node.choice.state = state
+    return unless node.choices['root']
+    node.choices['root'].set 'data', value
+    node.choices['root'].state = state
+    @tree.resolve @id, 'root'
 
   deliver: (value) ->
     @changeState State.FULFILLED, value
