@@ -418,58 +418,6 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.eql [15]
         done()
 
-  describe.skip 'with contested static node branching', ->
-    it 'should resolve', (done) ->
-      t = Root()
-      t.then 'start', (node, data) ->
-        node.branch 'option-1', ->
-          {}
-        node.branch 'option-2', ->
-          {}
-        true
-      .contest (choices) ->
-        return choices[choices.length-1]
-      .then 'after', (choice) ->
-        return true
-      .then (choice, val) ->
-        chai.expect(choice.namedPath()).to.eql ['option-2', 'option-2-sub', 'after']
-        done()
-      t.deliver 'foo'
-  
-  describe.skip 'with contested dynamic node branching', ->
-    it 'should resolve', (done) ->
-      t = Root
-        # API method to choose a tied contest
-        decideTie: (choices) ->
-          return choices[0]
-      t.deliver 'foo'
-      t.then 'start', (node, data) ->
-        for thing in ['foo','bar','tum']
-          t.branch thing, ->
-            {}
-      .contest null
-      .then 'after', ->
-        return true
-      .always ->
-        chai.expect(t.path).to.eql ['start', 'foo', 'after']
-        
-        firstChoice = tree.getChoice(t.path[0])
-        
-        # brute method        
-        fromStart = tree.decisions.filter (d) -> d.from is t.getId 'start'
-        fromStartNames = fromStart.map (d) -> d.name
-        chai.expect(fromStart).to.eql ['foo', 'bar', 'tum']
-        fromStartTypes = fromStart.map (d) -> d.type
-        chai.expect(fromStartTypes).to.eql ['fulfilled', 'ignored', 'ignored']
-        
-        # sugar
-        fromStart = tree.decisionNamesAt 'start'
-        chai.expect(fromStart).to.eql ['foo', 'bar', 'tum']
-        
-        done()
-        true
-      t.deliver 'foo'
-
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
       t = Root()
@@ -558,50 +506,3 @@ describe 'Thenable named promises', ->
         chai.expect(choice.get('non-existant2')).to.equal null
         done()
       t.deliver 'inpt2'
-
-###
-articleComponent = (ctx, item, promise) ->
-  block = ctx.getBlock (b) ->
-    ctx.expect(b.type is 'article')
-  promise.reject() unless block
-
-  ctx.branch 'w-image', ->
-    ctx.expect b.cover?, 'Cover needed for with image'
-    return ->
-  .else 'wo-image', ->
-    # No-op
-    return ->
-  .then 'landscape', ->
-    ctx.expect (b.cover.orientation is 'landscape'), 'Image needs to be landscape'
-    return ->
-  .else 'portrait', ->
-    # No-op
-    return ->
-  .then ->
-    promise.deliver
-      path: ctx.path
-      gss: ''
-      css: ''
-
-repostSection =
-  evaluate: (ctx, promise) ->
-    return ->
-  simulate: ->
-
-describe 'Thenable repost section', ->
-  it 'should resolve a single repost with image', (done) ->
-    context =
-      items: [
-        id: 'repost'
-        content: [
-          type: 'article'
-          cover:
-            src: 'image.png'
-        ]
-      ]
-
-    Thenable.evaluate repostSection, context
-    .then (result) ->
-      console.log result
-      done()
-###
