@@ -99,16 +99,17 @@ class Choice
     return unless @onAbort
     @onAbort @, reason, value, onBranch
 
-  registerSubleaf: (leaf, fulfilled, consumeWithoutContinuation = true) ->
+  registerSubleaf: (leaf, accepted, consumeWithoutContinuation = true) ->
     @subLeaves = [] unless @subLeaves
-    @subLeaves.push leaf
-    return unless fulfilled and (leaf.continuation or consumeWithoutContinuation)
+    @subLeaves.push
+      choice: leaf
+      accepted: accepted
+    return unless accepted and (leaf.continuation or consumeWithoutContinuation)
 
     @addPath leaf.namedPath() if leaf.continuation
 
     items = @availableItems()
     leafItems = leaf.availableItems()
-
 
     for i in items
       continue unless leafItems.indexOf(i) is -1
@@ -116,7 +117,8 @@ class Choice
 
   acceptedSubleaves: ->
     return [] unless @subLeaves.length
-    @subLeaves.filter (l) -> l.state is State.FULFILLED and l.continuation
+    accepted = @subLeaves.filter (l) -> l.accepted and l.choice.state is State.FULFILLED and l.choice.continuation
+    accepted.map (a) -> a.choice
 
   get: (name, followParent = true) ->
     return @attributes[name] if typeof @attributes[name] isnt 'undefined'
@@ -252,6 +254,14 @@ class Choice
       base[key] = val
 
     base
+
+  toSong: ->
+    @subLeaves = [] unless @subLeaves
+    accepted = @subLeaves.filter (l) -> l.accepted and l.choice.state is State.FULFILLED
+    song =
+      path: @namedPath()
+      children: accepted.map (a) -> a.choice.namedPath()
+    song
 
   toString: -> @path.join '-'
 

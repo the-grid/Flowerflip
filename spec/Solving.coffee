@@ -22,7 +22,7 @@ describe 'Solving a layout problem', ->
       .finally (c, d) ->
         chai.expect(d).to.be.a 'string'
         clean = d.replace /\n/g, ''
-        chai.expect(clean).to.equal '<section class="red directed"><article class="post right"><p>Foo</p></article></section>'
+        chai.expect(clean).to.equal '<section class="red directed"><article class="post left"><p>Foo</p></article></section>'
         chai.expect(c.namedPath()).to.eql [
           'color'
           'user'
@@ -67,7 +67,7 @@ describe 'Solving a layout problem', ->
           'sections'
         ]
         clean = d.replace /\n/g, ''
-        chai.expect(clean).to.equal '<section class="red directed"><article class="post right"><p>Foo</p></article><article class="post right"><h1>Bar</h1></article></section>'
+        chai.expect(clean).to.equal '<section class="red directed"><article class="post left"><p>Foo</p></article><article class="post right"><h1>Bar</h1></article></section>'
         return done()
 
   describe 'with invalid page config', ->

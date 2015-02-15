@@ -31,7 +31,7 @@ module.exports = (choice, data) ->
     c.expect(item).to.be.an 'object'
     c.set 'item', item
     c.branch 'left', (b) ->
-      b.set 'variant', 'right'
+      b.set 'variant', 'left'
       item
     c.branch 'right', (b) ->
       b.set 'variant', 'right'
