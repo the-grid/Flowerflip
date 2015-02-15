@@ -16,3 +16,37 @@ t = f.Root()
 .else 'bar', (choice, e) ->
   # Handle error
 ```
+
+### Error handling
+
+Error handling in Flowerflip is based on two separate classes of failures: *failed preconditions* and *programmer errors*.
+
+#### Preconditions
+
+Failed preconditions mean that a solving tree encountered data it can't deal with, for example when an image is not big enough, or when a shared item doesn't have an avatar for the original author.
+
+Preconditions are checked with the `choice.expect` method that wraps the [chai.expect](http://chaijs.com/api/bdd/) mechanism.
+
+```coffeescript
+.then (choice, block) ->
+  choice.expect(block.cover.width).to.be.above 500
+```
+
+If you want to pass data for the failure handling callbacks (`.else`, `.always`, `.finally`), you can do this by providing an additional second parameter:
+
+```coffeescript
+.then 'wide', (choice, block) ->
+  choice.expect(block.cover.width, block).to.be.above 500
+.else 'narrow', (choice, block) ->
+  # The block received here is passed from the second callback to choice.expect above
+```
+
+#### Programmer errors
+
+Since layout filters usually utilize multiple components, which in turn may utilize components of their own, it is possible for a component to receive data it didn't expect. These should be treated as programmer errors instead of failed preconditions, and handled via `choice.error`.
+
+```coffeescript
+.then (choice, item) ->
+  unless item
+    choice.error('Item expected')
+```
