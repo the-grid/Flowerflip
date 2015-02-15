@@ -60,6 +60,7 @@ class SubtreeResults
     return f
 
   handleResult: (collection, idx, choice, value, callback = ->) ->
+    return if @finished
     path = if choice then choice.toString() else ''
     collection[idx] = {} unless collection[idx]
     collection[idx][path] =

@@ -58,7 +58,7 @@ class BehaviorTree
     t
 
   onBranch: (orig, branch, callback) =>
-    #console.log "BRANCH #{branch} from #{orig}"
+    #console.log "BRANCH #{@id} #{branch} from #{orig}"
     if orig.id is 'root'
       throw new Error 'Cannot branch the root node'
     originalNode = @nodes[orig.id]
@@ -116,8 +116,36 @@ class BehaviorTree
 
     id
 
+  insertNodeAfter: (source, name, type, callback) ->
+    unless callback
+      type = name
+      callback = type
+      name = null
+
+    id = @createId name or type
+    #console.log "INSERT #{@id} #{source} #{id}"
+
+    sourceNode = @nodes[source]
+    unless sourceNode
+      throw new Error "Unknown source #{source} for choice #{id}"
+
+    @nodes[id] =
+      id: id
+      name: name
+      promiseSource: source
+      type: type
+      callback: callback
+      choices: {}
+      sources: [sourceNode]
+      destinations: sourceNode.destinations.slice 0
+      branches: []
+    sourceNode.destinations = [@nodes[id]]
+    sourceNode.after = @nodes[id]
+
+    id
+
   executeNode: (sourceChoice, id, data) ->
-    #console.log "EXEC #{sourceChoice} #{id} #{sourceChoice.state}"
+    #console.log "EXEC #{@id} #{sourceChoice} #{id} #{sourceChoice.state}"
     unless @nodes[id]
       throw new Error "Unknown node #{id}"
     node = @nodes[id]
@@ -179,7 +207,7 @@ class BehaviorTree
     return unless node
     choice = node.choices[sourcePath]
     return unless choice
-    #console.log "RESOLVE #{sourcePath} #{id} #{choice.state}"
+    #console.log "RESOLVE #{@id} #{sourcePath} #{id} #{choice.state}"
     return unless choice.state in [State.FULFILLED, State.REJECTED]
     val = choice.get 'data'
     throw val if node.type is 'finally' and choice.state is State.REJECTED
@@ -221,6 +249,7 @@ class BehaviorTree
     gotPositive = false
 
     source = @nodes[choice.promiseSource]
+    source = source.after if source.after
     while source
       if gotPositive and source.type in PositiveResults
         # Skip this one, keep looking for a negative

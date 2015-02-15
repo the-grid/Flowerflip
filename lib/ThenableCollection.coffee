@@ -5,7 +5,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
   if typeof tasks is 'function'
     tasks = tasks choice, data
 
-  composite.tree.parentOnBranch = (tree, orig, branch, callback) ->
+  choice.parentOnBranch = (tree, orig, branch, callback) ->
     unless orig.state is State.ABORTED
       orig.abort "Branched off to #{branch}", null, true
     state.branches.push branch
@@ -37,11 +37,10 @@ exports.run = (tasks, composite, choice, data, onResult) ->
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (p, d) ->
           p.continuation = val.tree.getRootChoice().continuation
-          choice.registerSubleaf p, true
           state.handleResult state.fulfilled, i, p, d, onResult
         val.else (p, e) ->
+          return if state.finished
           p.continuation = val.tree.getRootChoice().continuation
-          choice.registerSubleaf p, false
           state.handleResult state.rejected, i, p, e, onResult
         return
       state.handleResult state.fulfilled, i, null, val, onResult

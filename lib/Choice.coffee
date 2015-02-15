@@ -99,14 +99,16 @@ class Choice
     return unless @onAbort
     @onAbort @, reason, value, onBranch
 
-  registerSubleaf: (leaf, fulfilled) ->
+  registerSubleaf: (leaf, fulfilled, consumeWithoutContinuation = false) ->
     @subLeaves = [] unless @subLeaves
     @subLeaves.push leaf
-    return unless fulfilled and leaf.continuation
+    return unless fulfilled and (leaf.continuation or consumeWithoutContinuation)
+
+    @addPath leaf.namedPath() if leaf.continuation
+
     items = @availableItems()
     leafItems = leaf.availableItems()
 
-    @addPath leaf.namedPath()
 
     for i in items
       continue unless leafItems.indexOf(i) is -1

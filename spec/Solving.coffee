@@ -21,6 +21,8 @@ describe 'Solving a layout problem', ->
       layout t
       .finally (c, d) ->
         chai.expect(d).to.be.a 'string'
+        clean = d.replace /\n/g, ''
+        chai.expect(clean).to.equal '<section class="red directed"><article class="post right"><p>Foo</p></article></section>'
         chai.expect(c.namedPath()).to.eql [
           'color'
           'user'
@@ -30,8 +32,6 @@ describe 'Solving a layout problem', ->
           'directed'
           'sections'
         ]
-        clean = d.replace /\n/g, ''
-        chai.expect(clean).to.equal '<section class="red directed"><article class="post right"><p>Foo</p></article></section>'
         return done()
     it 'should solve a two-item site', (done) ->
       page =
