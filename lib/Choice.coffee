@@ -99,7 +99,7 @@ class Choice
     return unless @onAbort
     @onAbort @, reason, value, onBranch
 
-  registerSubleaf: (leaf, fulfilled, consumeWithoutContinuation = false) ->
+  registerSubleaf: (leaf, fulfilled, consumeWithoutContinuation = true) ->
     @subLeaves = [] unless @subLeaves
     @subLeaves.push leaf
     return unless fulfilled and (leaf.continuation or consumeWithoutContinuation)
