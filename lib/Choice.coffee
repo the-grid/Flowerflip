@@ -80,6 +80,19 @@ class Choice
 
     branch
 
+  # Used for testing whether input data matches preconditions
+  expect: (value = undefined, throwData = null, message) ->
+    args = [].slice.call arguments
+    unless args.length
+      return chai.expect
+    @set 'preconditionFailedData', throwData if throwData
+    chai.expect value, message
+
+  # Used for programmer errors, when input data is completely wrong
+  error: (message) ->
+    throw new Error message
+
+  # Used for aborting the execution of the current tree path
   abort: (reason, value, onBranch = false) ->
     @set 'aborted', reason
     @state = State.ABORTED
@@ -220,13 +233,6 @@ class Choice
       blocks = item.content
     blocks.filter (b) =>
       @attributes.blocksEaten.indexOf(b) is -1
-
-  expect: (value = undefined, throwData = null, message) ->
-    args = [].slice.call arguments
-    unless args.length
-      return chai.expect
-    @set 'preconditionFailedData', throwData if throwData
-    chai.expect value, message
 
   createChoice: (source, id, name) ->
     # Override in subclasses

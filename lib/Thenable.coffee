@@ -152,6 +152,8 @@ class Thenable
                 choice: option.choice
                 value: option.value
           chosen = score subChoice, fulfills, chosenSolutions
+          unless chosen.choice
+            subChoice.error "Chosen solution doesn't contain a choice node"
           chosenSolutions.push chosen
           accepted = resolve subChoice, chosenSolutions
           unless accepted
