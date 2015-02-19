@@ -18,7 +18,7 @@ NegativeResults = [
 trees = 0
 
 Thenable = require './Thenable'
-{State, isActive} = require './state'
+{State, stateToString, isActive} = require './state'
 chai = require 'chai'
 debug = require 'debug'
 log =
@@ -62,7 +62,7 @@ class BehaviorTree
     t
 
   onBranch: (orig, branch, callback) =>
-    log.tree "BRANCH #{@id} #{branch} from #{orig}"
+    log.tree "Branch #{branch} from #{orig}"
     if orig.id is 'root'
       throw new Error 'Cannot branch the root node'
     originalNode = @nodes[orig.id]
@@ -148,7 +148,7 @@ class BehaviorTree
     id
 
   executeNode: (sourceChoice, id, data) ->
-    log.tree "EXEC #{@id} #{sourceChoice} #{id} #{sourceChoice.state}"
+    log.tree "Execute #{sourceChoice} #{stateToString(sourceChoice.state)} -> #{id}"
     unless @nodes[id]
       throw new Error "Unknown node #{id}"
     node = @nodes[id]

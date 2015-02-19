@@ -17,6 +17,8 @@ To use these, run Flowerflip with the `DEBUG` environment variable set, for exam
 $ DEBUG=errors grunt test
 ```
 
+You can combine them comma-separated, like `DEBUG=errors,tree`.
+
 ## API
 
 The primary API for building decision trees is promise-based.
