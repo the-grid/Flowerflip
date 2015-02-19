@@ -20,6 +20,10 @@ trees = 0
 Thenable = require './Thenable'
 {State, isActive} = require './state'
 chai = require 'chai'
+debug = require 'debug'
+log =
+  tree: debug 'tree'
+  errors: debug 'errors'
 
 class BehaviorTree
   constructor: (@name, @options = {}) ->
@@ -58,7 +62,7 @@ class BehaviorTree
     t
 
   onBranch: (orig, branch, callback) =>
-    #console.log "BRANCH #{@id} #{branch} from #{orig}"
+    log.tree "BRANCH #{@id} #{branch} from #{orig}"
     if orig.id is 'root'
       throw new Error 'Cannot branch the root node'
     originalNode = @nodes[orig.id]
@@ -123,7 +127,6 @@ class BehaviorTree
       name = null
 
     id = @createId name or type
-    #console.log "INSERT #{@id} #{source} #{id}"
 
     sourceNode = @nodes[source]
     unless sourceNode
@@ -145,7 +148,7 @@ class BehaviorTree
     id
 
   executeNode: (sourceChoice, id, data) ->
-    #console.log "EXEC #{@id} #{sourceChoice} #{id} #{sourceChoice.state}"
+    log.tree "EXEC #{@id} #{sourceChoice} #{id} #{sourceChoice.state}"
     unless @nodes[id]
       throw new Error "Unknown node #{id}"
     node = @nodes[id]
@@ -176,6 +179,7 @@ class BehaviorTree
           choice.registerSubleaf c, true
           @resolve node.id, sourcePath
         val.else (c, e) =>
+          log.errors "#{c} resulted in %s", e.message
           choice.set 'data', e if isActive choice
           choice.state = State.REJECTED if isActive choice
           c.continuation = val.tree.getRootChoice().continuation
@@ -187,6 +191,7 @@ class BehaviorTree
       choice.state = State.FULFILLED if isActive choice
       @resolve node.id, sourcePath
     catch e
+      log.errors "#{choice} resulted in %s", e.message
       # Rejected
       return if choice.state is State.ABORTED
       if e instanceof chai.AssertionError
@@ -207,7 +212,6 @@ class BehaviorTree
     return unless node
     choice = node.choices[sourcePath]
     return unless choice
-    #console.log "RESOLVE #{@id} #{sourcePath} #{id} #{choice.state}"
     return unless choice.state in [State.FULFILLED, State.REJECTED]
     val = choice.get 'data'
     throw val if node.type is 'finally' and choice.state is State.REJECTED
