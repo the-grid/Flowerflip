@@ -300,7 +300,6 @@ class BehaviorTree
 
   toGraph: () ->
     graphs = {}
-    subgraphs = {}
     unless graph
       graph = new graphlib.Graph
         compound: true
@@ -334,9 +333,8 @@ class BehaviorTree
         style: 'dotted'
       if n.id is 'root'
         node.shape = 'Mdiamond'
-      if c
-        node.style = 'solid' if c.state in [2, 3]
-        node.color = 'red' if c.state is 3
+      node.style = 'solid' if c?.state in [2, 3]
+      node.color = 'red' if c?.state is 3
       node
 
     # Handler for registering node and edges based on a single behavior tree node
@@ -346,37 +344,30 @@ class BehaviorTree
 
       for path, choice of node.choices
         if choice.subtrees?.length
-          subgraphs[nodeId] = true
           # This node has subtrees, handle accordingly
           graph.setNode "cluster_#{nodeId}", choiceToNode t, node, choice
           graph.setParent "cluster_#{nodeId}", parent if parent
           toGraph st, "cluster_#{nodeId}" for st in choice.subtrees
-          continue
 
         # Register node
         graph.setNode nodeId, choiceToNode t, node, choice
         # Register parent if in subgraph
         graph.setParent nodeId, parent if parent
 
-        ###
         if choice.parentSource
           fromId = "t#{choice.parentSource.treeId}_#{choice.parentSource.id}"
-          fromId = "t#{choice.parentSource.treeId}_#{choice.parentSource.source.id}" if choice.parentSource.source
-        ###
         if choice.source
           fromId = "t#{t.id}_#{choice.source.id}"
-          ###
           if choice.source.subLeaves and choice.source.subLeaves.length
             for l in choice.source.subLeaves
               graph.setEdge "t#{l.choice.treeId}_#{l.choice.id}", nodeId,
                 style: if l.accepted then 'solid' else 'dotted'
             continue
-          ###
 
         continue unless fromId
         graph.setEdge fromId, nodeId, choiceToEdge(t, node, choice), node.name or node.type
 
-      unless node.id is 'root' and choices
+      if node.id isnt 'root' and not choices
         # This node was never reached, mark with ignored sources
         graph.setNode nodeId, choiceToNode t, node, choice
         graph.setParent nodeId, parent if parent
