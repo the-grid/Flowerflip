@@ -358,16 +358,20 @@ class BehaviorTree
         # Register parent if in subgraph
         graph.setParent nodeId, parent if parent
 
+        ###
         if choice.parentSource
           fromId = "t#{choice.parentSource.treeId}_#{choice.parentSource.id}"
           fromId = "t#{choice.parentSource.treeId}_#{choice.parentSource.source.id}" if choice.parentSource.source
+        ###
         if choice.source
           fromId = "t#{t.id}_#{choice.source.id}"
+          ###
           if choice.source.subLeaves and choice.source.subLeaves.length
             for l in choice.source.subLeaves
               graph.setEdge "t#{l.choice.treeId}_#{l.choice.id}", nodeId,
                 style: if l.accepted then 'solid' else 'dotted'
             continue
+          ###
 
         continue unless fromId
         graph.setEdge fromId, nodeId, choiceToEdge(t, node, choice), node.name or node.type
