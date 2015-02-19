@@ -11,6 +11,7 @@ class Choice
     unless id
       throw new Exception 'Choice ID required'
 
+    @treeId = null
     @id = id
     @source = source
     @parentSource = null

@@ -24,6 +24,8 @@ debug = require 'debug'
 log =
   tree: debug 'tree'
   errors: debug 'errors'
+graphlib = require 'graphlib'
+dot = require 'graphlib-dot'
 
 class BehaviorTree
   constructor: (@name, @options = {}) ->
@@ -51,6 +53,7 @@ class BehaviorTree
     node = tree.nodes['root']
     node.parentSource = choice
     subChoice = new @options.Choice null, 'root', name
+    subChoice.treeId = tree.id
     node.choices[''] = subChoice
     node.choices[''].onSubtree = tree.onSubtree
     node.choices[''].parentSource = choice
@@ -72,6 +75,7 @@ class BehaviorTree
     id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback, false
     sourcePath = if orig.source then orig.source.toString() else ''
     destPath = branch.toString()
+    branch.treeId = @id
     @nodes[id].choices[sourcePath] = branch
     @nodes[id].destinations = originalNode.destinations.slice 0
     originalNode.branches = [] unless originalNode.branches
@@ -157,6 +161,7 @@ class BehaviorTree
     sourcePath = sourceChoice.toString()
     unless node.choices[sourcePath]
       choice = new @options.Choice sourceChoice, id, node.name
+      choice.treeId = @id
       choice.onBranch = @onBranch
       choice.onSubtree = @onSubtree
       choice.parentOnBranch = @parentOnBranch
@@ -227,6 +232,7 @@ class BehaviorTree
   execute: (data, state = State.FULFILLED) ->
     node = @nodes['root']
     choice = @nodes['root'].choices[''] or new @options.Choice node.id
+    choice.treeId = @id
     choice.onBranch = @onBranch
     choice.onSubtree = @onSubtree
     choice.parentOnBranch = @parentOnBranch
@@ -292,29 +298,104 @@ class BehaviorTree
       source = @nodes[source.promiseSource]
     choice.sources
 
-  toDOT: ->
-    trees = {}
-    register = (t, node) ->
-      subtrees = []
-      if node.choice?.subtrees?.length
-        subtrees = node.choice.subtrees.map toVisual
-      t.addNode node.id, node.name, node.choice?.attributes, node.choice?.state, subtrees
-      for d in node.sources
-        state = State.PENDING
-        if node.choice and node.choice.source
-          state = node.choice.state if node.choice.source.id is d.id
-        t.addEdge d.id, node.id, node.type, state
-      for d in node.destinations
-        register t, d
-    toVisual = (tree) ->
-      return unless tree
-      return trees[tree.id] if trees[tree.id]
-      Tree = require './tree'
-      t = new Tree tree.name
-      register t, tree.nodes['root']
-      t
+  toGraph: () ->
+    graphs = {}
+    subgraphs = {}
+    unless graph
+      graph = new graphlib.Graph
+        compound: true
+        directed: true
+        multigraph: true
 
-    t = toVisual @
-    t.toDOT()
+    toGraph = (t, parent) ->
+      return unless t
+      return graphs[t.id] if graphs[t.id]
+      graphs[t.id] = true
+      # Start traversal from root of the main tree
+      register t, t.nodes['root'], parent
+      graphs[t.id]
+
+    choiceToEdge = (t, n, c) ->
+      edge =
+        label: n.name or n.type
+        name: n.name or n.type
+        color: 'black'
+        style: 'dotted'
+      edge.style = 'solid' if c.state in [2, 3]
+      edge.color = 'red' if c.state is 3
+
+      edge
+
+    choiceToNode = (t, n, c) ->
+      node =
+        label: n.name or n.type
+        color: 'black'
+        shape: 'box'
+        style: 'dotted'
+      if n.id is 'root'
+        node.shape = 'Mdiamond'
+      if c
+        node.style = 'solid' if c.state in [2, 3]
+        node.color = 'red' if c.state is 3
+      node
+
+    # Handler for registering node and edges based on a single behavior tree node
+    register = (t, node, parent = null) ->
+      nodeId = "t#{t.id}_#{node.id}"
+      choices = Object.keys(node.choices).length
+
+      for path, choice of node.choices
+        if choice.subtrees?.length
+          subgraphs[nodeId] = true
+          # This node has subtrees, handle accordingly
+          graph.setNode "cluster_#{nodeId}", choiceToNode t, node, choice
+          graph.setParent "cluster_#{nodeId}", parent if parent
+          toGraph st, "cluster_#{nodeId}" for st in choice.subtrees
+          continue
+
+        # Register node
+        graph.setNode nodeId, choiceToNode t, node, choice
+        # Register parent if in subgraph
+        graph.setParent nodeId, parent if parent
+
+        if choice.parentSource
+          fromId = "t#{choice.parentSource.treeId}_#{choice.parentSource.id}"
+          fromId = "t#{choice.parentSource.treeId}_#{choice.parentSource.source.id}" if choice.parentSource.source
+        if choice.source
+          fromId = "t#{t.id}_#{choice.source.id}"
+          if choice.source.subLeaves and choice.source.subLeaves.length
+            for l in choice.source.subLeaves
+              graph.setEdge "t#{l.choice.treeId}_#{l.choice.id}", nodeId,
+                style: if l.accepted then 'solid' else 'dotted'
+            continue
+
+        continue unless fromId
+        graph.setEdge fromId, nodeId, choiceToEdge(t, node, choice), node.name or node.type
+
+      unless node.id is 'root' and choices
+        # This node was never reached, mark with ignored sources
+        graph.setNode nodeId, choiceToNode t, node, choice
+        graph.setParent nodeId, parent if parent
+        for s in node.sources
+          # Don't draw edges from root to else to simplify graph
+          sourceId = "t#{t.id}_#{s.id}"
+          continue if s.id is 'root' and node.type is 'else'
+          #continue if subgraphs[sourceId]
+          graph.setEdge sourceId, nodeId,
+            style: 'dotted'
+            name: node.name or node.type
+            label: node.name or node.type
+          , node.name or node.type
+
+      # Continue traversing the tree
+      for n in node.destinations
+        register t, n, parent
+
+    toGraph @, null
+    return graph
+
+  toDOT: ->
+    graph = @toGraph()
+    return dot.write graph
 
 module.exports = BehaviorTree

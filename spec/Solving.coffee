@@ -56,6 +56,7 @@ describe 'Solving a layout problem', ->
       t.deliver page
       layout t
       .finally (c, d) ->
+        console.error t.toDOT()
         chai.expect(d).to.be.a 'string'
         chai.expect(c.namedPath()).to.eql [
           'color'
