@@ -25,7 +25,7 @@ class Tree
     unless @nodes[src]
       throw new Error "Source node #{src} not registered"
     unless @nodes[dest]
-      throw new Error "Source node #{src} not registered"
+      throw new Error "Destination node #{dest} not registered"
     @edges.push
       from: src
       to: dest
