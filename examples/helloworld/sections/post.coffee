@@ -36,6 +36,11 @@ module.exports = (choice, data) ->
     c.branch 'right', (b) ->
       b.set 'variant', 'right'
       item
+  .then (c, d) ->
+    c.branch 'light', (b) ->
+      d
+    c.branch 'dark', (b) ->
+      d
   .else (d, e) ->
     d.get 'item'
   .some [
