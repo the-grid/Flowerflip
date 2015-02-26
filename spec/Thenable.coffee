@@ -91,6 +91,24 @@ describe 'Thenable named promises', ->
       chai.expect(err.message).to.equal 'Failed here foo'
       done()
 
+  describe 'passing arguments', ->
+    it 'should produce the expected result', (done) ->
+      t = Root()
+      t.then (c, d) ->
+        # c.source.get('data') is 1, what we delivered to 'root'
+        d+1
+      .then (c, d) ->
+        # c.source.get('data') is 2
+        d+1
+      .then (c, d) ->
+        # c.source.get('data') is 3
+        d+1
+      .finally (c, d) ->
+        # c.source.get('data') is 4
+        chai.expect(d).to.equal 4
+        done()
+      t.deliver 1
+
   describe 'with a branching thenable', ->
     it 'should run two rounds of execution', (done) ->
       expected = [4, 6]
@@ -414,7 +432,7 @@ describe 'Thenable named promises', ->
         paths = results.map (r) -> r.path
         idx = paths.indexOf 'root-3-then'
         results[idx]
-      .then (c, res) ->
+      .finally (c, res) ->
         chai.expect(res).to.eql [15]
         done()
 
