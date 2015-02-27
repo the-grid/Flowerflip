@@ -540,7 +540,6 @@ describe 'Thenable named promises', ->
       .contest "contest-multiply", [
         multiply.bind @, 2
       ], (c, results) ->
-        console.log 'score method called'
         paths = results.map (r) -> r.path
         idx = paths.indexOf 'root-tripled-then'
         results[idx]
