@@ -524,3 +524,26 @@ describe 'Thenable named promises', ->
         chai.expect(choice.get('non-existant2')).to.equal null
         done()
       t.deliver 'inpt2'
+
+  describe 'branching in contest', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, c, data) ->
+        tree = c.tree 'a'
+        tree.deliver data
+        tree.then "#{multiplier}", (c, d) ->
+          c.branch 'doubled', (b, data) ->
+            data * 4
+          c.branch 'tripled', (b, data) ->
+            data * 3
+      t = Root()
+      t.deliver 5
+      .contest "contest-multiply", [
+        multiply.bind @, 2
+      ], (c, results) ->
+        console.log 'score method called'
+        paths = results.map (r) -> r.path
+        idx = paths.indexOf 'root-tripled-then'
+        results[idx]
+      .finally 'enfin-fini',   (c, res) ->
+        chai.expect(res).to.eql [15]
+        done()
