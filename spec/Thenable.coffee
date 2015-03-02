@@ -125,6 +125,22 @@ describe 'Thenable named promises', ->
         done() if expected.length is 0
       t.deliver 2
 
+  describe 'with simple all', ->
+    it 'should resolve', (done) ->
+      y1 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'yep-1', ->
+          1
+      t = Root()
+      .deliver {}
+      .all [y1]
+      .else (choice, e) -> # THIS ELSE CAUSES TIMEOUT!
+        console.log "FAILED!", e
+      .finally (choice, res) ->
+        chai.expect(res).to.eql [1]
+        done()
+
   describe 'with all & return values', ->
 
     y1 = (c, data) ->
