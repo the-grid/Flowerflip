@@ -14,7 +14,7 @@ To see more information on a running Flowerflip setup, there are two log setting
 To use these, run Flowerflip with the `DEBUG` environment variable set, for example:
 
 ```
-$ DEBUG=errors grunt test
+$ DEBUG=errors
 ```
 
 You can combine them comma-separated, like `DEBUG=errors,tree`.
