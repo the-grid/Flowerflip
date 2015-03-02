@@ -261,7 +261,7 @@ class Choice
     accepted = @subLeaves.filter (l) -> l.accepted and l.choice.state is State.FULFILLED
     song =
       path: @namedPath()
-      children: accepted.map (a) -> a.choice.namedPath()
+      children: accepted.map (a) -> a.choice.toSong()
     song
 
   toString: -> @path.join '-'
