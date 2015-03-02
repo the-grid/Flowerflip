@@ -126,27 +126,54 @@ describe 'Thenable named promises', ->
       t.deliver 2
 
   describe 'with all & return values', ->
-    it 'should resolve', (done) ->
-      t = Root()
 
-      y1 = (c, data) ->
-        th = Root()
-        pr = th.then 'yep-1', ->
-          1
-        th.deliver data
-        pr
+    y1 = (c, data) ->
+      th = Root()
+      pr = th.then 'yep-1', ->
+        1
+      th.deliver data
+      pr
 
-      y2 = (c, data) ->
-        th = Root()
-        th.deliver data
-        .then 'yep-2', ->
-          2
-      y3 = (c, data) ->
-        th = Root()
-        th.deliver data
-        .then 'yep-3', ->
-          3
+    y2 = (c, data) ->
+      th = Root()
+      th.deliver data
+      .then 'yep-2', ->
+        2
+    y3 = (c, data) ->
+      th = Root()
+      th.deliver data
+      .then 'yep-3', ->
+        3
 
+    shouldResolve = (n1,n2,n3) ->
+      it 'should resolve', (done) ->
+        t = Root()
+        t.deliver {}
+        .all [y1, y2, y3]
+        .then 'all-yep', (choice, data) ->
+          chai.expect(data).to.eql [1,2,3]
+          data
+        .all [n1, n2, n3]
+        .then 'all-nope', (choice, data) ->
+          {}
+        .else 'all-nope-else', (choice, result) ->
+          if result.data?
+            data = result.data
+          else
+            data = result
+          chai.expect(data).to.eql
+            yeps: [1,2,3]
+            nopes: 1
+          return data
+        .finally (choice, data) ->
+          chai.expect(choice.namedPath()).to.eql ['all-yep', 'all-nope-else']
+          chai.expect(data).to.eql
+            yeps: [1,2,3]
+            nopes: 1
+          done()
+          true
+
+    describe 'with throws', ->
       n1 = (c, data) ->
         th = Root()
         th.deliver data
@@ -174,26 +201,34 @@ describe 'Thenable named promises', ->
             yeps: data
             nopes: 3
           throw e
-      t.deliver {}
-      .all [y1, y2, y3]
-      .then 'all-yep', (choice, data) ->
-        chai.expect(data).to.eql [1,2,3]
-        data
-      .all [n1, n2, n3]
-      .then 'all-nope', (choice, data) ->
-        {}
-      .else 'all-nope-else', (choice, e) ->
-        chai.expect(e.data).to.eql
-          yeps: [1,2,3]
-          nopes: 1
-        return e.data
-      .finally (choice, data) ->
-        chai.expect(choice.namedPath()).to.eql ['all-yep', 'all-nope-else']
-        chai.expect(data).to.eql
-          yeps: [1,2,3]
-          nopes: 1
-        done()
-        true
+      shouldResolve n1, n2, n3
+
+    describe 'with aborts', ->
+      n1 = (c, data) ->
+        th = Root()
+        th.deliver data
+        .then 'nope-1', (n, data) ->
+          n.abort 'nope-1', {
+            yeps: data
+            nopes: 1
+          }
+      n2 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'nope-2', (n, data) ->
+          n.abort 'nope-2', {
+            yeps: data
+            nopes: 2
+          }
+      n3 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'nope-3', (n, data) ->
+          n.abort 'nope-3', {
+            yeps: data
+            nopes: 3
+          }
+      shouldResolve n1, n2, n3
 
   describe 'with all & branches', ->
     it 'should resolve with result per branch', (done) ->
