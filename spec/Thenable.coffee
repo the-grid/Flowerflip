@@ -259,6 +259,7 @@ describe 'Thenable named promises', ->
       ]
       .finally (c, res) ->
         chai.expect(res).to.be.instanceof Error
+        chai.expect(res.message).to.equal "I would've returned 15, but chose not to"
         done()
     it 'should resolve with value if given', (done) ->
       multiply = (multiplier, orig, data) ->
@@ -339,7 +340,7 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.equal 5
         done()
 
-  describe 'with some & return values', ->
+  describe 'with some, returning values & errors', ->
     it 'should resolve', (done) ->
       t = Root()
 
@@ -408,6 +409,80 @@ describe 'Thenable named promises', ->
         chai.expect(e.data.yeps[2]).to.equal 3
         chai.expect(e.data.nopes).to.equal 3
         return e.data
+      .always (choice, data) ->
+        chai.expect(choice.namedPath()).to.eql ['some-yep', 'some-nope-else']
+        chai.expect(data.yeps).to.be.an 'array'
+        chai.expect(data.yeps[0]).to.equal 1
+        chai.expect(data.yeps[2]).to.equal 3
+        chai.expect(data.nopes).to.equal 3
+        done()
+
+  describe 'with some, aborts & returning values', ->
+    it 'should resolve', (done) ->
+      t = Root()
+
+      y1 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'yep-1', ->
+          1
+      y2 = (c, data) ->
+        th = Root()
+        th.deliver data
+        .then 'yep-2', (n) ->
+          n.abort 'Foo'
+      y3 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'yep-3', (path, data) ->
+          3
+
+      n1 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'nope-1', (n, data) ->
+          n.abort "", {
+            yeps: data
+            nopes: 1
+          }
+      n2 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'nope-2', (n, data) ->
+          n.abort "", {
+            yeps: data
+            nopes: 2
+          }
+        .else 'still nope', (path, data) ->
+          throw new Error "I never get thrown"
+      n3 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'nope-3', (n, data) ->
+          n.abort "", {
+            yeps: data
+            nopes: 3
+          }
+
+      t.deliver {}
+      .some [y1, y2, y3]
+      .then 'some-yep', (choice, data) ->
+        chai.expect(data).to.be.an 'array'
+        chai.expect(data[0]).to.equal 1
+        chai.expect(data[2]).to.equal 3
+        data
+      .else (choice, data) ->
+        throw new Error 'foo'
+      .some [n1, n2, n3]
+      .then 'some-nope', ->
+        {}
+      .else 'some-nope-else', (choice, data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.yeps).to.be.an 'array'
+        chai.expect(data.yeps[0]).to.equal 1
+        chai.expect(data.yeps[2]).to.equal 3
+        chai.expect(data.nopes).to.equal 3
+        return data
       .always (choice, data) ->
         chai.expect(choice.namedPath()).to.eql ['some-yep', 'some-nope-else']
         chai.expect(data.yeps).to.be.an 'array'
