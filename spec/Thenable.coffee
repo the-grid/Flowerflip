@@ -489,6 +489,41 @@ describe 'Thenable named promises', ->
         chai.expect(choice.namedPath()).to.eql ['w-image', 'portrait', 'faces', 'cropping']
         done()
         true
+    it 'should produce the expected song with sub-trees', (done) ->
+      exp =
+        path: ['w-image', 'portrait', 'faces']
+        children: [
+          path: ['face-detection', 'match-people', 'no-friends']
+          children: []
+        ]
+      t = Root()
+      t.deliver true
+      .then 'w-image', ->
+        return {}
+      .else 'wo-image', ->
+        return {}
+      .then 'landscape', ->
+        throw new chai.AssertionError 'Not landscape'
+      .else 'portrait', ->
+        return {}
+      .else 'square', ->
+        throw new chai.AssertionError 'Not square'
+      .then 'faces', (choice, data) ->
+        t2 = choice.tree()
+        t2.deliver data
+        t2.then 'face-detection', ->
+          {}
+        .then 'match-people', ->
+          {}
+        .then 'find-friends', ->
+          throw new chai.AssertionError 'Trying hard'
+        .else 'no-friends', (path, faces) ->
+          {}
+      .then 'cropping', (c) ->
+        {}
+      .finally (choice, val) ->
+        chai.expect(choice.source.source.toSong()).to.eql exp
+        done()
 
   describe 'all() with no tasks', ->
     it 'should give error', (done) ->

@@ -270,6 +270,10 @@ class BehaviorTree
         source = @nodes[source.promiseSource]
         continue
 
+      if choice.type in ['always', 'finally'] and source.destinations.length
+        source = @nodes[source.promiseSource]
+        continue
+
       # Add edge between source and node
       source.destinations.push choice if source.destinations.indexOf(choice) is -1
       choice.sources.push source if choice.sources.indexOf(source) is -1
