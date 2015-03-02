@@ -133,7 +133,6 @@ describe 'Thenable named promises', ->
         1
       th.deliver data
       pr
-
     y2 = (c, data) ->
       th = Root()
       th.deliver data
@@ -356,6 +355,25 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.eql expected.shift()
         done() if expected.length is 0
 
+  describe 'with maybe & throw', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree 'a'
+        tree.deliver data
+        tree.then (c, d) ->
+          d * multiplier
+          throw new Error "I would've returned #{d*multiplier}, but chose not to"
+      t = Root()
+      t.deliver 5
+      .maybe [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ]
+      .else (c, res) ->
+        chai.expect(res).to.be.a 'number'
+        chai.expect(res).to.equal 5
+        done()
+
   describe 'with maybe & abort', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
@@ -373,6 +391,22 @@ describe 'Thenable named promises', ->
       .else (c, res) ->
         chai.expect(res).to.be.a 'number'
         chai.expect(res).to.equal 5
+        done()
+
+  describe 'with simple some', ->
+    it 'should resolve', (done) ->
+      y1 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'yep-1', ->
+          1
+      t = Root()
+      .deliver {}
+      .some([y1])
+      .else (choice, e) -> # THIS ELSE CAUSES TIMEOUT!
+        console.log "FAILED!", e
+      .finally (choice, res) ->
+        chai.expect(res).to.eql [1]
         done()
 
   describe 'with some, returning values & errors', ->
