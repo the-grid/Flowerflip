@@ -224,6 +224,7 @@ class BehaviorTree
     localPath = choice.toString()
     dests = @findDestinations node, choice
     dests.forEach (d) =>
+      return if d.type in ['always', 'finally'] and dests.length > 1
       destChoice = d.choices[localPath]
       if destChoice and destChoice.state isnt State.PENDING
         return
@@ -267,10 +268,6 @@ class BehaviorTree
         continue
       if gotNegative and source.type in NegativeResults
         # Skip this one, keep looking for a positive
-        source = @nodes[source.promiseSource]
-        continue
-
-      if choice.type in ['always', 'finally'] and source.destinations.length
         source = @nodes[source.promiseSource]
         continue
 
