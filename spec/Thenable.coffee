@@ -328,6 +328,52 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.equal 3
         done()
 
+  describe 'with simple positive maybe', ->
+    it 'should resolve', (done) ->
+      y1 = (c, data) ->
+        Root()
+        .deliver data
+        .then 'yep-1', ->
+          1
+      t = Root()
+      .deliver {}
+      .maybe [y1]
+      .else (choice, e) ->
+        throw new Error "ignored"
+      .finally (choice, res) ->
+        chai.expect(res).to.eql [1]
+        done()
+
+  describe 'with simple negative maybe via throw', ->
+    it 'should resolve', (done) ->
+      n = (c, data) ->
+        Root()
+        .deliver data
+        .then 'nope', ->
+          throw "nope"
+      t = Root()
+      .deliver 'hello'
+      .maybe [n]
+      .else (choice, data) ->
+        data
+      .finally (choice, res) ->
+        chai.expect(res).to.equal "hello"
+        done()
+
+  describe 'with simple negative maybe via abort', ->
+    it 'should resolve', (done) ->
+      n = (c, data) ->
+        Root()
+        .deliver data
+        .then 'nope', (n) ->
+          n.abort "nope"
+      t = Root()
+      .deliver 'hello'
+      .maybe [n]
+      .finally (choice, res) ->
+        chai.expect(res).to.equal "hello"
+        done()
+
   describe 'with maybe & return values', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
