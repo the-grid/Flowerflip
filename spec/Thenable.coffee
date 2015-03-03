@@ -136,7 +136,7 @@ describe 'Thenable named promises', ->
       .deliver {}
       .all [y1]
       .else (choice, e) -> # THIS ELSE CAUSES TIMEOUT!
-        console.log "FAILED!", e
+        "ignore me"
       .finally (choice, res) ->
         chai.expect(res).to.eql [1]
         done()

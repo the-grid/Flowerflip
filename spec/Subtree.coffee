@@ -4,84 +4,203 @@ Root = require '../lib/Root'
 
 describe 'Subtrees', ->
 
-  describe 'non-existent attribute lookup in tree', ->
-    it 'should return null', (done) ->
+  describe 'succeeded & failed children', ->
 
-      direct = (orig, data) ->
-        subtree = orig.tree 'directcalc'
-        subtree.deliver data
-        t = subtree.then 'tripled', (c, d) ->
-          chai.expect(c.get('non-existant1')).to.equal null
-          d * 3
+    testChild = (child, expected) ->
+      it "it should return #{expected}", (done) ->
+        t = Root()
+        t.deliver {}
+        .then child
+        .then (n,d) ->
+          child: d
+          state: 'w-child'
+        .else (n,d) ->
+          child: d
+          state: 'wo-child'
+        .finally (c, d) ->
+          chai.expect(d).to.eql expected
+          done()
 
-      t = Root()
-      t.deliver 5
-      .all [direct]
-      .finally (c, res) ->
-        chai.expect(c.get('non-existant2')).to.equal null
-        chai.expect(res).to.be.an 'array'
-        chai.expect(res).to.eql [
-          15
-        ]
-        done()
+    describe 'succeed via return', ->
+      child = (parent, data) ->
+        parent.tree 'child'
+        .deliver data
+        .then (c, d) ->
+          return "yep"
+      testChild child,
+        child:'yep'
+        state:'w-child'
+
+    describe 'failed via throw', ->
+      child = (parent, data) ->
+        parent.tree 'child'
+        .deliver data
+        .then ->
+          throw "failed"
+        .then ->
+          "ignore this"
+        .then ->
+          "ignore this too"
+      testChild child,
+        child:'failed'
+        state:'wo-child'
+
+    describe 'failed via abort', ->
+      child = (parent, data) ->
+        parent.tree 'child'
+        .deliver data
+        .then (c, d) ->
+          c.abort "nope", "aborted"
+        .then ->
+          "ignore this"
+        .else ->
+          "ignore this too"
+      testChild child,
+        child:'aborted'
+        state:'wo-child'
+
+    describe 'succeed with thrown grandchild', ->
+      grandchild = (parent, data) ->
+        parent.tree 'grandchild'
+        .deliver data
+        .then ->
+          throw "failed"
+        .then ->
+          "ignore this"
+      child = (parent, data) ->
+        parent.tree 'child'
+        .deliver data
+        .then grandchild
+        .else (c, d) ->
+          chai.expect(d).to.equal 'failed'
+          d
+        .then (c, d) ->
+          return "yep"
+      testChild child,
+        child:'yep'
+        state:'w-child'
+
+    describe 'succeed with aborted grandchild', ->
+      # to ensure abort doesn't bubble up beyond grandchild tree
+      grandchild = (parent, data) ->
+        parent.tree 'grandchild'
+        .deliver data
+        .then (c, d) ->
+          c.abort "nope", "aborted"
+        .then ->
+          "ignore this"
+        .else ->
+          "ignore this too"
+      child = (parent, data) ->
+        parent.tree 'child'
+        .deliver data
+        .then grandchild
+        .else (c, d) ->
+          chai.expect(d).to.equal 'aborted'
+          d
+        .then (c, d) ->
+          return "yep"
+      testChild child,
+        child:'yep'
+        state:'w-child'
+
+    describe 'recursive subchildren', ->
+      count = 0
+      child = (parent, data) ->
+        parent.tree 'child'
+        .deliver data
+        .then (c, d) ->
+          throw count if count is 5
+          count++
+          d
+        .then child
+        .else (c, d) ->
+          return "yep #{count}"
+        .then (c, d) ->
+          return "yep #{count}"
+      testChild child,
+        child:'yep 5'
+        state:'w-child'
 
 
-  describe 'non-existant attribute lookup in continue tree', ->
-    it 'should return null', (done) ->
-      direct = (orig, data) ->
-        subtree = orig.continue 'directcalc'
-        subtree.deliver data
-        t = subtree.then 'tripled', (c, d) ->
-          chai.expect(c.get('non-existant1')).to.equal null
-          d * 3
+  describe 'get & set', ->
 
-      t = Root()
-      t.deliver 5
-      .all [direct]
-      .finally (c, res) ->
-        chai.expect(c.get('non-existant2')).to.equal null
-        chai.expect(res).to.be.an 'array'
-        chai.expect(res).to.eql [ 15 ]
-        done()
+    describe 'non-existent attribute lookup in tree', ->
+      it 'should return null', (done) ->
 
+        direct = (orig, data) ->
+          subtree = orig.tree 'directcalc'
+          subtree.deliver data
+          t = subtree.then 'tripled', (c, d) ->
+            chai.expect(c.get('non-existant1')).to.equal null
+            d * 3
 
-  describe 'attribute lookup in continue tree', ->
-    it 'should return null', (done) ->
-      direct = (orig, data) ->
-        subtree = orig.continue 'directcalc'
-        subtree.deliver data
-        t = subtree.then 'tripled', (c, d) ->
-          c.set 'existant2', 'foo'
-          chai.expect(c.get('non-existant1')).to.equal null
-          d * 3
+        t = Root()
+        t.deliver 5
+        .all [direct]
+        .finally (c, res) ->
+          chai.expect(c.get('non-existant2')).to.equal null
+          chai.expect(res).to.be.an 'array'
+          chai.expect(res).to.eql [
+            15
+          ]
+          done()
 
-      t = Root()
-      t.deliver 5
-      .all [direct]
-      .finally (c, res) ->
-        chai.expect(c.get('existant2')).to.equal 'foo'
-        chai.expect(res).to.be.an 'array'
-        chai.expect(res).to.eql [ 15 ]
-        done()
+    describe 'non-existant attribute lookup in continue tree', ->
+      it 'should return null', (done) ->
+        direct = (orig, data) ->
+          subtree = orig.continue 'directcalc'
+          subtree.deliver data
+          t = subtree.then 'tripled', (c, d) ->
+            chai.expect(c.get('non-existant1')).to.equal null
+            d * 3
 
-  describe 'attribute lookup in parent continue tree', ->
-    it 'should return null', (done) ->
-      direct = (orig, data) ->
-        subtree = orig.continue 'directcalc'
-        subtree.deliver data
-        t = subtree.then 'tripled', (c, d) ->
-          chai.expect(c.get('non-existant1')).to.equal null
+        t = Root()
+        t.deliver 5
+        .all [direct]
+        .finally (c, res) ->
+          chai.expect(c.get('non-existant2')).to.equal null
+          chai.expect(res).to.be.an 'array'
+          chai.expect(res).to.eql [ 15 ]
+          done()
+
+    describe 'attribute lookup in continue tree', ->
+      it 'should return null', (done) ->
+        direct = (orig, data) ->
+          subtree = orig.continue 'directcalc'
+          subtree.deliver data
+          t = subtree.then 'tripled', (c, d) ->
+            c.set 'existant2', 'foo'
+            chai.expect(c.get('non-existant1')).to.equal null
+            d * 3
+
+        t = Root()
+        t.deliver 5
+        .all [direct]
+        .finally (c, res) ->
           chai.expect(c.get('existant2')).to.equal 'foo'
-          d * 3
+          chai.expect(res).to.be.an 'array'
+          chai.expect(res).to.eql [ 15 ]
+          done()
 
-      t = Root()
-      t.deliver 5
-      .then "bar", (n, v) ->
-        n.set 'existant2', 'foo'
-        v
-      .all "foo", [direct]
-      .finally (c, res) ->
-        chai.expect(c.get('existant2')).to.equal 'foo'
-        chai.expect(res).to.be.an 'array'
-        chai.expect(res).to.eql [ 15 ]
-        done()
+    describe 'attribute lookup in parent continue tree', ->
+      it 'should return null', (done) ->
+        direct = (orig, data) ->
+          subtree = orig.continue 'directcalc'
+          subtree.deliver data
+          t = subtree.then 'tripled', (c, d) ->
+            chai.expect(c.get('non-existant1')).to.equal null
+            chai.expect(c.get('existant2')).to.equal 'foo'
+            d * 3
+
+        t = Root()
+        t.deliver 5
+        .then "bar", (n, v) ->
+          n.set 'existant2', 'foo'
+          v
+        .all "foo", [direct]
+        .finally (c, res) ->
+          chai.expect(c.get('existant2')).to.equal 'foo'
+          chai.expect(res).to.be.an 'array'
+          chai.expect(res).to.eql [ 15 ]
+          done()
