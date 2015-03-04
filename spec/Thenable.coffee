@@ -640,6 +640,69 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.eql [15]
         done()
 
+  describe 'with looping contest', ->
+    it "should resolve in then", (done) ->
+      count = 0
+      contestant = (c, d) ->
+        c.tree 'contestant'
+        .deliver {}
+        .then (c, d) ->
+          count++
+          "contestant-#{count}"
+      Root()
+      .deliver()
+      .contest [contestant]
+        , (c, contestants) -> # scoring
+          contestants[0]
+        , (n, chosen) -> # until
+          return false if count is 4
+          true
+      .then (c, results) ->
+        chai.expect(results).to.eql ["contestant-1","contestant-2","contestant-3","contestant-4"]
+        done()
+
+    it "should resolve in finally", (done) ->
+      count = 0
+      contestant = (c, d) ->
+        c.tree 'contestant'
+        .deliver {}
+        .then (c, d) ->
+          count++
+          "contestant-#{count}"
+      Root()
+      .deliver()
+      .contest [contestant]
+        , (c, contestants) -> # scoring
+          contestants[0]
+        , (n, chosen) -> # until
+          return false if count is 4
+          true
+      .finally (c, results) ->
+        chai.expect(results).to.eql ["contestant-1","contestant-2","contestant-3","contestant-4"]
+        done()
+
+  describe 'branching in contest', ->
+    it 'should resolve', (done) ->
+      multiply = (multiplier, c, data) ->
+        c.tree 'a'
+        .deliver data
+        .then "#{multiplier}", (c, d) ->
+          c.branch 'doubled', (b, data) ->
+            data * 4
+          c.branch 'tripled', (b, data) ->
+            data * 3
+      Root()
+      .deliver 5
+      .contest "contest-multiply", [
+        multiply.bind @, 2
+      ], (c, results) ->
+        paths = results.map (r) -> r.path
+        idx = paths.indexOf 'root-tripled-then'
+        results[idx]
+      .finally 'enfin-fini',   (c, res) ->
+        chai.expect(res).to.eql [15]
+        done()
+
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
       Root()
@@ -762,27 +825,4 @@ describe 'Thenable named promises', ->
       .finally 'bar', (choice, val) ->
         chai.expect(val).to.be.a 'null'
         chai.expect(choice.get('non-existant2')).to.equal null
-        done()
-
-
-  describe 'branching in contest', ->
-    it 'should resolve', (done) ->
-      multiply = (multiplier, c, data) ->
-        c.tree 'a'
-        .deliver data
-        .then "#{multiplier}", (c, d) ->
-          c.branch 'doubled', (b, data) ->
-            data * 4
-          c.branch 'tripled', (b, data) ->
-            data * 3
-      Root()
-      .deliver 5
-      .contest "contest-multiply", [
-        multiply.bind @, 2
-      ], (c, results) ->
-        paths = results.map (r) -> r.path
-        idx = paths.indexOf 'root-tripled-then'
-        results[idx]
-      .finally 'enfin-fini',   (c, res) ->
-        chai.expect(res).to.eql [15]
         done()
