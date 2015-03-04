@@ -260,7 +260,7 @@ class BehaviorTree
     gotPositive = false
 
     source = @nodes[choice.promiseSource]
-    source = source.after if source.after
+    source = source.after while source.after
     while source
       if gotPositive and source.type in PositiveResults
         # Skip this one, keep looking for a negative
