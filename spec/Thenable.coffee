@@ -787,3 +787,134 @@ describe 'Thenable named promises', ->
       .finally 'enfin-fini',   (c, res) ->
         chai.expect(res).to.eql [15]
         done()
+
+  describe 'promise chain within branching', ->
+    it 'should execute the promise chain', (done) ->
+      multiply = (multiplier, c, data) ->
+        tree = c.tree 'a'
+        tree.deliver data
+        tree.then "#{multiplier}", (c, d) ->
+          c.branch 'doubled', (b, data) ->
+            data * 2
+          c.branch 'tripled', (b, data) ->
+            btree = b.continue
+            btree.deliver data
+            btree.then 'btreethen', (c, data) ->
+              data * 3
+      t = Root()
+      t.deliver 5
+      .contest "contest-multiply", [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ], (c, results) ->
+        paths = results.map (r) -> r.path
+        idx = paths.indexOf 'root-tripled-btreethen'
+        results[idx]
+      .finally 'end',   (c, res) ->
+        chai.expect(res).to.eql [15]
+        done()
+
+  describe 'promise chain after branching', ->
+    it 'should walk the promise chain of the branch', (done) ->
+      multiply = (multiplier, c, data) ->
+        tree = c.tree 'a'
+        tree.deliver data
+        tree.then "#{multiplier}", (c, d) ->
+          c.branch 'doubled', (b, data) ->
+            data * 2
+          c.branch 'tripled', (b, data) ->
+            data
+          .then 'bthen0', (c, data) ->
+            data
+          .then 'bthen1', (c, data) ->
+            data * 3
+      t = Root()
+      t.deliver 5
+      .contest "contest-multiply", [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ], (c, results) ->
+        paths = results.map (r) -> r.path
+        idx = paths.indexOf 'root-tripled-bthen0-bthen1'
+        results[idx]
+      .finally 'end',   (c, res) ->
+        chai.expect(res).to.eql [15]
+        done()
+
+  describe 'two consecutive negative results in the promise chain', ->
+    it 'finally should once be called once', (done) ->
+      multiply = (multiplier, orig, data) ->
+        tree = orig.tree 'a'
+        tree.deliver data
+        tree.then (c, d) ->
+          c.abort "I would've returned #{d*multiplier}, but chose not to"
+      t = Root()
+      t.deliver 5
+      .maybe [
+        multiply.bind @, 2
+        multiply.bind @, 3
+      ]
+      .else (c, res) ->
+        res * 2
+      .finally (c, res) ->
+        done()
+
+  describe 'using subtree with continue', ->
+    it 'should generate good path', (done) ->
+      treeComposition = (c, d) ->
+        sub = c.continue 'subtree_c'
+        sub.deliver d
+        sub.then 'subthen0', (c, d) ->
+          d
+        .then 'subthen1', (c, d) ->
+          d
+      t = Root()
+      t.deliver 10
+      .then 'then0', (c, d) ->
+        d
+      .all 'allin', [
+        treeComposition.bind @
+        treeComposition.bind @
+      ]
+      .then 'then1', (c, d) ->
+        d
+      .finally (c, d) ->
+        exp = {
+          path: [
+             'then0',
+             'allin',
+             'subtree_c',
+             'subthen0',
+             'subthen1',
+             'then1']
+          children: []
+        }
+        chai.expect(c.toSong()).to.eql exp
+        done()
+
+  describe 'when branching', ->
+    it 'the available items should be copied to the root choice of the branch', (done) ->
+      multiply = (multiplier, c, data) ->
+        tree = c.tree 'a'
+        tree.deliver data
+        tree.then "#{multiplier}", (c, d) ->
+          c.branch 'tripled', (b, data) ->
+            data is b.attributes.items.length
+      t = Root()
+      t.deliver
+        config:
+          name: 'test'
+          type: 'test'
+        items: [
+          'item1'
+          'item2'
+          ]
+      .then (c, d) ->
+        c.source.attributes.items.length
+      .contest "contest-multiply", [
+        multiply.bind @, 2
+      ], (c, results) ->
+        results[0]
+      .finally 'enfin-fini', (c, res) ->
+        chai.expect(res[0]).to.be.true
+        done()
