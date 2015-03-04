@@ -826,7 +826,6 @@ describe 'Thenable named promises', ->
         chai.expect(val).to.be.a 'null'
         chai.expect(choice.get('non-existant2')).to.equal null
         done()
-      t.deliver 'inpt2'
 
   describe 'promise chain within branching', ->
     it 'should execute the promise chain', (done) ->
