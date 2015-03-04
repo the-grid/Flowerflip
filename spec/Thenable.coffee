@@ -655,8 +655,8 @@ describe 'Thenable named promises', ->
         , (c, contestants) -> # scoring
           contestants[0]
         , (n, chosen) -> # until
-          return false if count is 4
-          true
+          return true if count is 4
+          false
       .then (c, results) ->
         chai.expect(results).to.eql ["contestant-1","contestant-2","contestant-3","contestant-4"]
         done()
@@ -675,8 +675,8 @@ describe 'Thenable named promises', ->
         , (c, contestants) -> # scoring
           contestants[0]
         , (n, chosen) -> # until
-          return false if count is 4
-          true
+          return true if count is 4
+          false
       .finally (c, results) ->
         chai.expect(results).to.eql ["contestant-1","contestant-2","contestant-3","contestant-4"]
         done()
