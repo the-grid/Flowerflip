@@ -39,12 +39,16 @@ class Choice
 
   addPath: (p) ->
     if p instanceof Array
-      unique = p.filter (path) => @attributes.paths.indexOf(path) is -1
+      unique = p.filter (path) =>
+        return false unless @attributes.paths.indexOf(path) is -1
+        return false if @name is path
+        true
       return unless unique.length
       @addPath path for path in p
       return
     unless typeof p is 'string'
       throw new Error 'Paths must be strings'
+    return if p is @name
     @attributes.paths.push p
 
   fulfilledPath: ->
@@ -71,6 +75,7 @@ class Choice
     branch.state = State.PENDING
     branch.onBranch = @onBranch
     branch.parentOnBranch = @parentOnBranch
+    branch.onSubtree = @onSubtree
     branch.onAbort = @onAbort
     clone = @toJSON()
     for key, val of clone
