@@ -40,13 +40,25 @@ class BehaviorTree
         destinations: []
         branches: []
     @parentOnBranch = null
-    @onAbort = null
+    @directOnAbort = false
+    @aborted = []
 
   onSubtree: (choice, name, continuation, callback) =>
     tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
 
     onAbort = choice.onAbort or @onAbort
+    onAbort = null if @directOnAbort
+    unless onAbort
+      onAbort = (rChoice, reason, value, branched) =>
+        return if branched
+        log.tree "#{@name or @id} Non-collection #{rChoice} aborted with %s", reason
+        tree.aborted.push
+          choice: rChoice
+          reason: reason
+          value: value
+      tree.directOnAbort = true
+
     tree.onAbort = onAbort
     t = new Thenable tree
     choice.subtrees = [] unless choice.subtrees
@@ -186,19 +198,28 @@ class BehaviorTree
           choice.registerSubleaf c, true
           @resolve node.id, sourcePath
         val.else (c, e) =>
-          log.errors "#{c} resulted in %s", e.message
+          log.errors "#{@name or @id} #{c} resulted in %s", e.message
           choice.set 'data', e if isActive choice
           choice.state = State.REJECTED if isActive choice
           c.continuation = val.tree.getRootChoice().continuation
           choice.registerSubleaf c, false
           @resolve node.id, sourcePath
+
+        if val.tree.directOnAbort and val.tree.aborted.length and choice.state is State.RUNNING
+          abort = val.tree.aborted[0]
+          log.errors "#{@name or @id} #{choice} has an aborted subtree, reason: #{abort.reason}"
+          choice.set 'data', abort.value if isActive choice
+          choice.state = State.REJECTED if isActive choice
+          choice.registerSubleaf abort.choice, false
+          @resolve node.id, sourcePath
+
         return
       # Straight-up value returned
       choice.set 'data', val if isActive choice
       choice.state = State.FULFILLED if isActive choice
       @resolve node.id, sourcePath
     catch e
-      log.errors "#{choice} resulted in %s", e.message
+      log.errors "#{@name or @id} #{choice} resulted in %s", e.message
       # Rejected
       return if choice.state is State.ABORTED
       if e instanceof chai.AssertionError

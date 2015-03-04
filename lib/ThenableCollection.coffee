@@ -23,6 +23,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
       reason: reason
       value: value
     onResult state, value unless branched
+  composite.tree.directOnAbort = false
   choice.onAbort = composite.tree.onAbort
 
   state = new SubtreeResults tasks.length
