@@ -786,3 +786,40 @@ describe 'Thenable named promises', ->
       .finally 'enfin-fini',   (c, res) ->
         chai.expect(res).to.eql [15]
         done()
+
+  describe 'rethrowing errors', ->
+    it 'should resolve', (done) ->
+      Root()
+      .deliver()
+      .then (choice, data) ->
+        choice.error()
+      .else (choice, err) ->
+        throw err
+      .else (choice, err) ->
+        done()
+
+    it 'should pass on the error', (done) ->
+      error = null
+
+      Root()
+      .deliver()
+      .then (choice, data) ->
+        choice.error()
+      .else (choice, err) ->
+        error = err
+        throw err
+      .else (choice, err) ->
+        chai.expect(err).to.equal error
+        done()
+
+    it 'bypass other positive promises', (done) ->
+      Root()
+      .deliver()
+      .then (choice, data) ->
+        choice.error()
+      .else (choice, err) ->
+        throw err
+      .then (choice, data) ->
+        expect(true).to.equal false
+      .else (choice, err) ->
+        done()
