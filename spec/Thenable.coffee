@@ -865,7 +865,7 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.eql [15]
         done()
 
-  describe 'promise chain after branching', ->
+  describe.skip 'promise chain after branching', ->
     it 'should walk the promise chain of the branch', (done) ->
       multiply = (multiplier, c, data) ->
         tree = c.tree 'a'
