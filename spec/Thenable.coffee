@@ -848,6 +848,7 @@ describe 'Thenable named promises', ->
       ], (c, results) ->
         paths = results.map (r) -> r.path
         idx = paths.indexOf 'root-tripled-btreethen'
+        idx = 0 if idx is -1
         results[idx]
       .finally 'end',   (c, res) ->
         chai.expect(res).to.eql [15]
@@ -875,6 +876,7 @@ describe 'Thenable named promises', ->
       ], (c, results) ->
         paths = results.map (r) -> r.path
         idx = paths.indexOf 'root-tripled-bthen0-bthen1'
+        idx = 0 if idx is -1
         results[idx]
       .finally 'end',   (c, res) ->
         chai.expect(res).to.eql [15]
@@ -938,7 +940,7 @@ describe 'Thenable named promises', ->
         tree.deliver data
         tree.then "#{multiplier}", (c, d) ->
           c.branch 'tripled', (b, data) ->
-            data is b.attributes.items.length
+            data is b.availableItems().length
       t = Root()
       t.deliver
         config:
@@ -949,11 +951,12 @@ describe 'Thenable named promises', ->
           'item2'
           ]
       .then (c, d) ->
-        c.source.attributes.items.length
+        c.availableItems().length
       .contest "contest-multiply", [
         multiply.bind @, 2
       ], (c, results) ->
         results[0]
       .finally 'enfin-fini', (c, res) ->
         chai.expect(res[0]).to.be.true
+        chai.expect(c.availableItems().length).to.equal 2
         done()
