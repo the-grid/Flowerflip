@@ -65,7 +65,7 @@ class BehaviorTree
     t
 
   onBranch: (orig, branch, callback) =>
-    log.tree "Branch #{branch} from #{orig}"
+    log.tree "#{@name or @id} Branch #{branch} from #{orig}"
     if orig.id is 'root'
       throw new Error 'Cannot branch the root node'
     originalNode = @nodes[orig.id]
@@ -152,7 +152,7 @@ class BehaviorTree
     id
 
   executeNode: (sourceChoice, id, data) ->
-    log.tree "Execute #{sourceChoice} #{stateToString(sourceChoice.state)} -> #{id}"
+    log.tree "#{@name or @id} Execute #{sourceChoice} #{stateToString(sourceChoice.state)} -> #{id}"
     unless @nodes[id]
       throw new Error "Unknown node #{id}"
     node = @nodes[id]
@@ -224,6 +224,7 @@ class BehaviorTree
     localPath = choice.toString()
     dests = @findDestinations node, choice
     dests.forEach (d) =>
+      return if d.type in ['always', 'finally'] and dests.length > 1
       destChoice = d.choices[localPath]
       if destChoice and destChoice.state isnt State.PENDING
         return
@@ -259,7 +260,7 @@ class BehaviorTree
     gotPositive = false
 
     source = @nodes[choice.promiseSource]
-    source = source.after if source.after
+    source = source.after while source.after
     while source
       if gotPositive and source.type in PositiveResults
         # Skip this one, keep looking for a negative
@@ -267,10 +268,6 @@ class BehaviorTree
         continue
       if gotNegative and source.type in NegativeResults
         # Skip this one, keep looking for a positive
-        source = @nodes[source.promiseSource]
-        continue
-
-      if choice.type in ['always', 'finally'] and source.destinations.length
         source = @nodes[source.promiseSource]
         continue
 
