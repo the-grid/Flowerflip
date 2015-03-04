@@ -847,7 +847,7 @@ describe 'Thenable named promises', ->
           c.branch 'doubled', (b, data) ->
             data * 2
           c.branch 'tripled', (b, data) ->
-            btree = b.continue
+            btree = b.continue()
             btree.deliver data
             btree.then 'btreethen', (c, data) ->
               data * 3
@@ -857,8 +857,8 @@ describe 'Thenable named promises', ->
         multiply.bind @, 2
         multiply.bind @, 3
       ], (c, results) ->
-        paths = results.map (r) -> r.path
-        idx = paths.indexOf 'root-tripled-btreethen'
+        paths = results.map (r) -> r.choice.namedPath().join '-'
+        idx = paths.indexOf 'a-tripled-btreethen'
         idx = 0 if idx is -1
         results[idx]
       .finally 'end',   (c, res) ->
