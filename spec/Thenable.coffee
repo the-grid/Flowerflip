@@ -128,7 +128,7 @@ describe 'Thenable named promises', ->
   describe 'with simple all', ->
     it 'should resolve', (done) ->
       y1 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'yep-1', ->
           1
@@ -144,19 +144,18 @@ describe 'Thenable named promises', ->
   describe 'with all & return values', ->
 
     y1 = (c, data) ->
-      th = Root()
-      pr = th.then 'yep-1', ->
+      c.tree()
+      .deliver data
+      .then 'yep-1', ->
         1
-      th.deliver data
-      pr
     y2 = (c, data) ->
-      th = Root()
-      th.deliver data
+      c.tree()
+      .deliver data
       .then 'yep-2', ->
         2
     y3 = (c, data) ->
-      th = Root()
-      th.deliver data
+      c.tree()
+      .deliver data
       .then 'yep-3', ->
         3
 
@@ -190,8 +189,8 @@ describe 'Thenable named promises', ->
 
     describe 'with throws', ->
       n1 = (c, data) ->
-        th = Root()
-        th.deliver data
+        c.tree()
+        .deliver data
         .then 'nope-1', (path, data) ->
           e = new Error 'nope-1'
           e.data =
@@ -199,7 +198,7 @@ describe 'Thenable named promises', ->
             nopes: 1
           throw e
       n2 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-2', (path, data) ->
           e = new Error 'nope-2'
@@ -208,7 +207,7 @@ describe 'Thenable named promises', ->
             nopes: 2
           e
       n3 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-3', (path, data) ->
           e = new Error 'nope-3'
@@ -220,15 +219,15 @@ describe 'Thenable named promises', ->
 
     describe 'with aborts', ->
       n1 = (c, data) ->
-        th = Root()
-        th.deliver data
+        c.tree()
+        .deliver data
         .then 'nope-1', (n, data) ->
           n.abort 'nope-1', {
             yeps: data
             nopes: 1
           }
       n2 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-2', (n, data) ->
           n.abort 'nope-2', {
@@ -236,7 +235,7 @@ describe 'Thenable named promises', ->
             nopes: 2
           }
       n3 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-3', (n, data) ->
           n.abort 'nope-3', {
@@ -248,18 +247,17 @@ describe 'Thenable named promises', ->
   describe 'with all & branches', ->
     it 'should resolve with result per branch', (done) ->
       brancher = (orig, data) ->
-        subtree = orig.tree 'calc'
-        subtree.deliver data
-        t = subtree.then (choice) ->
+        orig.tree 'calc'
+        .deliver data
+        .then (choice) ->
           choice.branch 'doubled', (c, d) ->
             d * 2
           choice.branch 'squared', (c, d) ->
             d * d
-        t
       direct = (orig, data) ->
-        subtree = orig.tree 'directcalc'
-        subtree.deliver data
-        t = subtree.then 'tripled', (c, d) ->
+        orig.tree 'directcalc'
+        .deliver data
+        .then 'tripled', (c, d) ->
           d * 3
 
       expected = [
@@ -267,8 +265,8 @@ describe 'Thenable named promises', ->
         [25, 15]
       ]
 
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .all [brancher, direct]
       .finally (c, res) ->
         chai.expect(res).to.be.an 'array'
@@ -279,12 +277,12 @@ describe 'Thenable named promises', ->
   describe 'with race & return values', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree 'a'
-        tree.deliver data
-        tree.then (c, d) ->
+        orig.tree 'a'
+        .deliver data
+        .then (c, d) ->
           d * multiplier
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .race [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -296,13 +294,13 @@ describe 'Thenable named promises', ->
   describe 'with race & abort', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree 'a'
-        tree.deliver data
-        tree.then (c, d) ->
+        orig.tree 'a'
+        .deliver data
+        .then (c, d) ->
           d * multiplier
           c.abort "I would've returned #{d*multiplier}, but chose not to"
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .race [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -313,13 +311,13 @@ describe 'Thenable named promises', ->
         done()
     it 'should resolve with value if given', (done) ->
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree 'a'
-        tree.deliver data
-        tree.then (c, d) ->
+        orig.tree 'a'
+        .deliver data
+        .then (c, d) ->
           d * multiplier
           c.abort "I would've returned #{d*multiplier}, but chose not to", multiplier
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .race [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -331,11 +329,11 @@ describe 'Thenable named promises', ->
   describe 'with simple positive maybe', ->
     it 'should resolve', (done) ->
       y1 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'yep-1', ->
           1
-      t = Root()
+      Root()
       .deliver {}
       .maybe [y1]
       .else (choice, e) ->
@@ -347,11 +345,11 @@ describe 'Thenable named promises', ->
   describe 'with simple negative maybe via throw', ->
     it 'should resolve', (done) ->
       n = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope', ->
           throw "nope"
-      t = Root()
+      Root()
       .deliver 'hello'
       .maybe [n]
       .else (choice, data) ->
@@ -363,11 +361,11 @@ describe 'Thenable named promises', ->
   describe 'with simple negative maybe via abort', ->
     it 'should resolve', (done) ->
       n = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope', (n) ->
           n.abort "nope"
-      t = Root()
+      Root()
       .deliver 'hello'
       .maybe [n]
       .finally (choice, res) ->
@@ -377,12 +375,12 @@ describe 'Thenable named promises', ->
   describe 'with maybe & return values', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree 'a'
-        tree.deliver data
-        tree.then (c, d) ->
+        orig.tree 'a'
+        .deliver data
+        .then (c, d) ->
           d * multiplier
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .maybe [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -400,15 +398,15 @@ describe 'Thenable named promises', ->
         [20, 45]
       ]
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree "a#{multiplier}"
-        tree.deliver data
-        tree.then (c, d) ->
+        orig.tree "a#{multiplier}"
+        .deliver data
+        .then (c, d) ->
           c.branch 'regular', ->
             d * multiplier
           c.branch 'super', ->
             d * multiplier * multiplier
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .maybe [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -420,13 +418,13 @@ describe 'Thenable named promises', ->
   describe 'with maybe & throw', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree 'a'
-        tree.deliver data
-        tree.then (c, d) ->
+        orig.tree 'a'
+        .deliver data
+        .then (c, d) ->
           d * multiplier
           throw new Error "I would've returned #{d*multiplier}, but chose not to"
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .maybe [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -439,13 +437,13 @@ describe 'Thenable named promises', ->
   describe 'with maybe & abort', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree 'a'
-        tree.deliver data
-        tree.then (c, d) ->
+        orig.tree 'a'
+        .deliver data
+        .then (c, d) ->
           d * multiplier
           c.abort "I would've returned #{d*multiplier}, but chose not to"
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .maybe [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -462,7 +460,7 @@ describe 'Thenable named promises', ->
         .deliver data
         .then 'yep-1', ->
           1
-      t = Root()
+      Root()
       .deliver {}
       .some([y1])
       .else (choice, e) -> # THIS ELSE CAUSES TIMEOUT!
@@ -473,26 +471,25 @@ describe 'Thenable named promises', ->
 
   describe 'with some, returning values & errors', ->
     it 'should resolve', (done) ->
-      t = Root()
 
       y1 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'yep-1', ->
           1
       y2 = (c, data) ->
-        th = Root()
-        th.deliver data
+        c.tree()
+        .deliver data
         .then 'yep-2', ->
           throw new Error 'Foo'
       y3 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'yep-3', (path, data) ->
           3
 
       n1 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-1', (path, data) ->
           e = new Error ""
@@ -501,7 +498,7 @@ describe 'Thenable named promises', ->
             nopes: 1
           throw e
       n2 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-2', (path, data) ->
           e = new Error ""
@@ -512,7 +509,7 @@ describe 'Thenable named promises', ->
         .else 'still nope', (path, data) ->
           throw new Error "still nope"
       n3 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-3', (path, data) ->
           e = new Error ""
@@ -521,7 +518,8 @@ describe 'Thenable named promises', ->
             nopes: 3
           throw e
 
-      t.deliver {}
+      Root()
+      .deliver {}
       .some [y1, y2, y3]
       .then 'some-yep', (choice, data) ->
         chai.expect(data).to.be.an 'array'
@@ -550,26 +548,25 @@ describe 'Thenable named promises', ->
 
   describe 'with some, aborts & returning values', ->
     it 'should resolve', (done) ->
-      t = Root()
 
       y1 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'yep-1', ->
           1
       y2 = (c, data) ->
-        th = Root()
-        th.deliver data
+        c.tree()
+        .deliver data
         .then 'yep-2', (n) ->
           n.abort 'Foo'
       y3 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'yep-3', (path, data) ->
           3
 
       n1 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-1', (n, data) ->
           n.abort "", {
@@ -577,7 +574,7 @@ describe 'Thenable named promises', ->
             nopes: 1
           }
       n2 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-2', (n, data) ->
           n.abort "", {
@@ -587,7 +584,7 @@ describe 'Thenable named promises', ->
         .else 'still nope', (path, data) ->
           throw new Error "I never get thrown"
       n3 = (c, data) ->
-        Root()
+        c.tree()
         .deliver data
         .then 'nope-3', (n, data) ->
           n.abort "", {
@@ -595,7 +592,8 @@ describe 'Thenable named promises', ->
             nopes: 3
           }
 
-      t.deliver {}
+      Root()
+      .deliver {}
       .some [y1, y2, y3]
       .then 'some-yep', (choice, data) ->
         chai.expect(data).to.be.an 'array'
@@ -625,12 +623,12 @@ describe 'Thenable named promises', ->
   describe 'with contest & simple scoring', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
-        tree = orig.tree 'a'
-        tree.deliver data
-        tree.then "#{multiplier}", (c, d) ->
+        orig.tree 'a'
+        .deliver data
+        .then "#{multiplier}", (c, d) ->
           d * multiplier
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .contest [
         multiply.bind @, 2
         multiply.bind @, 3
@@ -644,8 +642,8 @@ describe 'Thenable named promises', ->
 
   describe 'handling a multi-dimensional template branch', ->
     it 'should produce the expected path', (done) ->
-      t = Root()
-      t.deliver true
+      Root()
+      .deliver true
       .then 'w-image', ->
         return {}
       .else 'wo-image', ->
@@ -665,8 +663,8 @@ describe 'Thenable named promises', ->
         chai.expect(choice.namedPath()).to.eql ['w-image', 'portrait', 'small']
         done()
     it 'should produce the expected path also when there are sub-trees', (done) ->
-      t = Root()
-      t.deliver true
+      Root()
+      .deliver true
       .then 'w-image', ->
         return {}
       .else 'wo-image', ->
@@ -678,9 +676,9 @@ describe 'Thenable named promises', ->
       .else 'square', ->
         throw new chai.AssertionError 'Not square'
       .then 'faces', (choice, data) ->
-        t2 = Root()
-        t2.deliver data
-        t2.then 'face-detection', ->
+        choice.tree()
+        .deliver data
+        .then 'face-detection', ->
           {}
         .then 'match-people', ->
           {}
@@ -702,8 +700,8 @@ describe 'Thenable named promises', ->
           path: ['face-detection', 'match-people', 'no-friends']
           children: []
         ]
-      t = Root()
-      t.deliver true
+      Root()
+      .deliver true
       .then 'w-image', ->
         return {}
       .else 'wo-image', ->
@@ -715,9 +713,9 @@ describe 'Thenable named promises', ->
       .else 'square', ->
         throw new chai.AssertionError 'Not square'
       .then 'faces', (choice, data) ->
-        t2 = choice.tree()
-        t2.deliver data
-        t2.then 'face-detection', ->
+        choice.tree()
+        .deliver data
+        .then 'face-detection', ->
           {}
         .then 'match-people', ->
           {}
@@ -733,8 +731,8 @@ describe 'Thenable named promises', ->
 
   describe 'all() with no tasks', ->
     it 'should give error', (done) ->
-      t = Root()
-      t.deliver true
+      Root()
+      .deliver true
       .then 'foo', ->
         return false
       .all 'empty-all', []
@@ -745,39 +743,40 @@ describe 'Thenable named promises', ->
 
   describe 'getting attribute in consecutive choice', ->
     it 'should return value', (done) ->
-      t = Root()
-      t.then 'foo', (choice, val) ->
+      Root()
+      .deliver 'inpt1'
+      .then 'foo', (choice, val) ->
         choice.set 'val1', 'baz'
         null
       .finally 'bar', (choice, val) ->
         chai.expect(val).to.be.a 'null'
         chai.expect(choice.get('val1')).to.equal 'baz'
         done()
-      t.deliver 'inpt1'
   describe 'getting non-existant attribute in consecutive choice', ->
     it 'should return value', (done) ->
-      t = Root()
-      t.then 'foo', (choice, val) ->
+      Root()
+      .deliver 'inpt2'
+      .then 'foo', (choice, val) ->
         choice.set 'val1', 'baz'
         null
       .finally 'bar', (choice, val) ->
         chai.expect(val).to.be.a 'null'
         chai.expect(choice.get('non-existant2')).to.equal null
         done()
-      t.deliver 'inpt2'
+
 
   describe 'branching in contest', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, c, data) ->
-        tree = c.tree 'a'
-        tree.deliver data
-        tree.then "#{multiplier}", (c, d) ->
+        c.tree 'a'
+        .deliver data
+        .then "#{multiplier}", (c, d) ->
           c.branch 'doubled', (b, data) ->
             data * 4
           c.branch 'tripled', (b, data) ->
             data * 3
-      t = Root()
-      t.deliver 5
+      Root()
+      .deliver 5
       .contest "contest-multiply", [
         multiply.bind @, 2
       ], (c, results) ->

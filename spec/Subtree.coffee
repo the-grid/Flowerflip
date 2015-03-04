@@ -4,7 +4,7 @@ Root = require '../lib/Root'
 
 describe 'Subtrees', ->
 
-  describe 'succeeded & failed children', ->
+  describe 'child of then', ->
 
     testChild = (child, expected) ->
       it "it should return #{expected}", (done) ->
