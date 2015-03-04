@@ -29,6 +29,17 @@ describe 'Thenable named promises', ->
         chai.expect(choice.namedPath(true)).to.eql ['bar']
         done()
       t.deliver 'Hello'
+    it 'should call the "catch" callback', (done) ->
+      t = Root()
+      t.then 'foo', (choice, val) ->
+        throw new Error 'Failboat'
+      .catch 'bar', (choice, e) ->
+        chai.expect(choice.path).to.eql ['root', 'foo', 'bar']
+        chai.expect(e.message).to.equal 'Failboat'
+        chai.expect(choice.namedPath()).to.eql []
+        chai.expect(choice.namedPath(true)).to.eql ['bar']
+        done()
+      t.deliver 'Hello'
   describe 'on failed precondition in promise', ->
     it 'should call the "else" callback with AssertionError', (done) ->
       t = Root()

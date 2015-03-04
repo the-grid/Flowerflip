@@ -208,6 +208,9 @@ class Thenable
     promise.id = id
     promise
 
+  catch: (name, onRejected) ->
+    @else name, onRejected
+
   always: (name, onAlways) ->
     do @checkFinal
     if typeof name is 'function'
