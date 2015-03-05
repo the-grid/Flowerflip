@@ -37,6 +37,22 @@ describe 'Subtrees', ->
             chai.expect(d).to.eql expected
             done()
 
+      describe "then -> child.then", ->
+        it "it should return #{expected}", (done) ->
+          t = Root()
+          t.deliver {}
+          .then (n,d) ->
+            child n,d
+            .then (n,d) ->
+              child: d
+              state: 'w-child'
+          .else (n,d) ->
+            child: d
+            state: 'wo-child'
+          .finally (c, d) ->
+            chai.expect(d).to.eql expected
+            done()
+
     describe 'succeed via return', ->
       child = (parent, data) ->
         parent.tree 'child'
