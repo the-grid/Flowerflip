@@ -15,9 +15,17 @@ describe 'Extensions', ->
         super arguments...
         @attributes._assets = []
         @
+      createChoice: (source, id, name) ->
+        new CustomChoice source, id, name
 
-      registerAsset: (asset) ->
-        ensureActive @
+      registerSubleaf: (leaf, accepted, consumeWithoutContinuation = true) ->
+        super leaf, accepted, consumeWithoutContinuation
+        return unless accepted
+        assets = leaf.registeredAssets false
+        @registerAsset a, false for a in assets
+
+      registerAsset: (asset, checkActive = true) ->
+        ensureActive @ if checkActive
         throw new Error 'No asset provided' unless asset
         id = asset.id
         if !id?
@@ -29,41 +37,19 @@ describe 'Extensions', ->
           @attributes._assets.push asset
         asset
 
-      registeredAssets: ->
+      registeredAssets: (followParent = true) ->
         # gather assets above and at choice node
         if @source
           assets = @source.registeredAssets()
           assets = assets.concat @attributes._assets if @attributes._assets.length
-        else if @parentSource
+        else if @parentSource and followParent
           assets = @parentSource.registeredAssets()
           assets = assets.concat @attributes._assets if @attributes._assets.length
         else
           assets = @attributes._assets
-
-        # HOW DO I GATHER ALL ASSETS, not just at and above node????
-
-        #childAssets = @_registeredChildAssets()
-        #console.log JSON.stringify childAssets,1,1
-        #assets = assets.concat childAssets if childAssets.length
-
         assets
-
-      _registeredSubAssets: ->
-        # ????????????????????
-        assets = []
-        for child in @acceptedChildren()
-          assets = assets.concat child.attributes._assets if child.attributes._assets.length
-          childAssets = child._registeredChildAssets()
-          assets = assets.concat childAssets if childAssets.length
-        assets
-
-      acceptedChildren: ->
-        return [] unless @subLeaves.length
-        accepted = @subLeaves.filter (l) -> l.accepted and l.choice.state is State.FULFILLED
-        accepted.map (a) -> a.choice
 
       getAssets: (callback) ->
-        ensureActive @
         assets = @registeredAssets()
         return null unless assets.length
         return null unless typeof callback is 'function'
