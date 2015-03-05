@@ -7,19 +7,35 @@ describe 'Subtrees', ->
   describe 'child of then', ->
 
     testChild = (child, expected) ->
-      it "it should return #{expected}", (done) ->
-        t = Root()
-        t.deliver {}
-        .then child
-        .then (n,d) ->
-          child: d
-          state: 'w-child'
-        .else (n,d) ->
-          child: d
-          state: 'wo-child'
-        .finally (c, d) ->
-          chai.expect(d).to.eql expected
-          done()
+      describe "then(child)", ->
+        it "it should return #{expected}", (done) ->
+          t = Root()
+          t.deliver {}
+          .then child
+          .then (n,d) ->
+            child: d
+            state: 'w-child'
+          .else (n,d) ->
+            child: d
+            state: 'wo-child'
+          .finally (c, d) ->
+            chai.expect(d).to.eql expected
+            done()
+      describe "then -> child", ->
+        it "it should return #{expected}", (done) ->
+          t = Root()
+          t.deliver {}
+          .then (n,d) ->
+            child n,d
+          .then (n,d) ->
+            child: d
+            state: 'w-child'
+          .else (n,d) ->
+            child: d
+            state: 'wo-child'
+          .finally (c, d) ->
+            chai.expect(d).to.eql expected
+            done()
 
     describe 'succeed via return', ->
       child = (parent, data) ->
