@@ -4,6 +4,10 @@ chai = require 'chai'
 globalValues = {}
 
 class Choice
+
+  @ensureActive: ensureActive
+  @State: State
+
   constructor: (source, id, @name) ->
     unless id
       id = source

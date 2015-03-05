@@ -2,6 +2,7 @@ chai = require 'chai' unless chai
 Choice = require '../lib/Choice'
 
 describe 'Choice node API', ->
+
   describe 'with no parents', ->
     it 'should not allow instantiating without an ID', ->
       inst = ->
@@ -314,7 +315,6 @@ describe 'Choice node API', ->
         gc = new Choice c, 'grand-child'
         ggc = new Choice gc, 'g-grand-child'
         chai.expect(ggc.get('attr')).to.eql 'bar'
-
     describe 'getting non-existant attribute', ->
       it 'should return null', ->
         p = new Choice 'hello'
@@ -327,7 +327,6 @@ describe 'Choice node API', ->
         gc = new Choice c, 'grand-child'
         ggc = new Choice gc, 'g-grand-child'
         chai.expect(ggc.get('color2')).to.be.a 'null'
-
     describe 'get/set globals', ->
       beforeEach ->
         Choice.reset()
