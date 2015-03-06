@@ -1,6 +1,5 @@
 chai = require 'chai' unless chai
 Choice = require '../lib/Choice'
-# {State, ensureActive} = require '../lib/state'
 Root = require '../lib/Root'
 
 describe 'Extensions', ->
@@ -40,7 +39,10 @@ describe 'Extensions', ->
       registeredAssets: (followParent = true) ->
         # gather assets above and at choice node
         if @source
-          assets = @source.registeredAssets()
+          # followParent must be passed
+          # otherwise memory leak occurs!!!!!!!!
+          # can't seem to reproduce in specs....
+          assets = @source.registeredAssets(followParent)
           assets = assets.concat @attributes._assets if @attributes._assets.length
         else if @parentSource and followParent
           assets = @parentSource.registeredAssets()
@@ -51,8 +53,8 @@ describe 'Extensions', ->
 
       getAssets: (callback) ->
         assets = @registeredAssets()
-        return null unless assets.length
-        return null unless typeof callback is 'function'
+        return [] unless assets.length
+        return [] unless typeof callback is 'function'
         results = []
         for asset in assets
           try
@@ -60,8 +62,7 @@ describe 'Extensions', ->
             results.push(asset) if ret
           catch e
             continue
-        return results if results.length > 0
-        null
+        results
 
     it 'should extend choice', (done) ->
       Root 'asset-test', Choice:CustomChoice
@@ -181,3 +182,5 @@ describe 'Extensions', ->
       .finally (c, files) ->
         chai.expect(files).to.eql ['./didot.css','./georgia.css']
         done()
+
+
