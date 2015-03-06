@@ -15,7 +15,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
     state.branches.push branch
 
   composite.tree.onAbort = (rChoice, reason, value, branched) ->
-    log.tree "#{rChoice} aborted with %s", reason unless branched
+    log.tree "#{choice} task #{rChoice} aborted with %s", reason unless branched
     value = new Error reason unless value
     state.aborted.push
       branched: branched
@@ -46,14 +46,14 @@ exports.run = (tasks, composite, choice, data, onResult) ->
           choice.registerTentativeSubleaf p
           state.handleResult state.fulfilled, i, p, d, onResult
         val.else (p, e) ->
-          log.errors "#{p} resulted in %s", e.message
+          log.errors "#{choice} task #{i} #{p} resulted in %s", e.message
           return if state.finished
           p.continuation = val.tree.getRootChoice().continuation
           state.handleResult state.rejected, i, p, e, onResult
         return
       state.handleResult state.fulfilled, i, null, val, onResult
     catch e
-      log.errors "#{choice} resulted in %s", e.message
+      log.errors "#{choice} task #{i} resulted in %s", e.message
       state.handleResult state.rejected, i, null, e, onResult
 
 exports.deliverBranches = (state, originalChoice, choice, composite) ->
