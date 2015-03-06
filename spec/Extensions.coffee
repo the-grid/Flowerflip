@@ -216,47 +216,47 @@ describe 'Extensions', ->
       assets registered by child should not be overwritten by parent
       ###
       
-      testAssetContest = (contestants, done) ->
+      abortion = (parent) ->
+        parent.tree('abortion')
+        .deliver()
+        .then 'ignore-ugly', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './ugly.css'
+        .then (c) ->
+          c.abort "too ugly"
 
-        abortion = (parent) ->
-          parent.tree('abortion')
-          .deliver()
-          .then 'ignore-ugly', (c) ->
-            c.registerAsset
-              id: 'display-font-css'
-              type: 'css-file'
-              data: './ugly.css'
-          .then (c) ->
-            c.abort "too ugly"
+      abortionParent = (parent) ->
+        parent.tree('abortionParent')
+        .deliver()
+        .some [abortion,abortion]
+        .else ->
+          true
+        .maybe [abortion]
+        .else ->
+          true
+        .then abortion
+        .else ->
+          true
 
-        abortionParent = (parent) ->
-          parent.tree('abortionParent')
-          .deliver()
-          .some [abortion,abortion]
-          .else ->
-            true
-          .maybe [abortion]
-          .else ->
-            true
-          .then abortion
-          .else ->
-            true
+      winnergrandchild = (parent) ->
+        parent.tree('winnergrandchild')
+        .deliver()
+        .then abortionParent
+        .then 'display-font', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './didot.css'
 
-        winnergrandchild = (parent) ->
-          parent.tree('winnergrandchild')
-          .deliver()
-          .then abortionParent
-          .then 'display-font', (c) ->
-            c.registerAsset
-              id: 'display-font-css'
-              type: 'css-file'
-              data: './didot.css'
-
-        winnerchild = (parent) ->
-          parent.tree('winnerchild')
-          .deliver()
-          .then abortionParent
-          .then winnergrandchild
+      winnerchild = (parent) ->
+        parent.tree('winnerchild')
+        .deliver()
+        .then abortionParent
+        .then winnergrandchild
+      
+      testAssetContest = (contestants, done) ->        
 
         countdown = 5
         Root 'asset-test', Choice:CustomChoice
