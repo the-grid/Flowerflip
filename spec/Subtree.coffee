@@ -236,5 +236,94 @@ describe 'Subtrees', ->
           chai.expect(res).to.be.an 'array'
           chai.expect(res).to.eql [ 15 ]
           done()
+          
+  
+  describe 'section example', ->
+    
+    testSections = (failedComponent, done) ->
+    
+      component = (n,d) ->
+        n.tree 'component'
+        .deliver()
+        .then failedComponent
+        .else 'subcomponent-optional', ->
+          true
+        .then ->
+          true
+    
+      post = (n,d) ->
+        n.tree 'post'
+        .deliver()
+        .then (n) ->
+          item = n.getItem (item) ->
+            item
+          n.eatItem item
+          item
+        .then component
+        .else (n) ->
+          n.abort('component required')
+        .then failedComponent
+        .else 'component-optional', ->
+          true
+        .all [component, failedComponent]
+        .else 'components-optional', ->
+          true
+        .some [component, failedComponent]
+            
+      section = (n,d) ->
+        n.tree 'section'
+        .deliver()
+        .then post
+        .then ->
+          'section'
+    
+      layout = (n, sections) ->
+        n.tree 'layout'
+        .deliver()
+        .contest sections        
+          , (n, results) -> # scoring
+            return results[0]
+          , (n, chosen) -> # until
+            return false if n.availableItems().length
+            true
+    
+      Root()
+      .deliver 
+        items: [
+            id: 1
+          ,
+            id: 2
+          ,
+            id: 3
+        ]
+      .then ->
+        [section]
+      .then layout
+      .then (n, results) ->
+        chai.expect(results.length).to.equal 3
+        done()
+          
+    it 'should work w/ thrown failedComponent', (done) ->
+      
+      failedComponent = (n,d) ->
+        n.tree 'failedComponent'
+        .deliver()
+        .then (n) ->
+          throw 'failedComponent thrown'
+      
+      testSections failedComponent, done
+    
+    it 'should work w/ aborted failedComponent', (done) ->
+      
+      failedComponent = (n,d) ->
+        n.tree 'failedComponent'
+        .deliver()
+        .then (n) ->
+          n.abort('failedComponent aborted')
+      
+      testSections failedComponent, done
+      
+      
+
 
 
