@@ -210,12 +210,127 @@ describe 'Extensions', ->
         chai.expect(files).to.eql ['./didot.css','./georgia.css']
         done()
 
-    
+
+    describe 'multi-level asset registration w/ contest', ->
+      ###
+      assets registered by child should not be overwritten by parent
+      ###
+      winnergrandchild = (parent) ->
+        parent.tree('winnergrandchild')
+        .deliver()
+        .then 'display-font', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './didot.css'
+
+      winnerchild = (parent) ->
+        parent.tree('winnerchild')
+        .deliver()
+        .then winnergrandchild
+
+      testAssetContest = (contestants, done) ->
+
+        countdown = 5
+        Root 'asset-test', Choice:CustomChoice
+        .deliver {}
+        .then 'start', ->
+          true
+        .contest contestants
+          , (n, results) -> # scoring
+            return results[1]
+          , (n, chosen) -> # until
+            countdown--
+            return false if countdown
+            true
+        .then 'ignore-arial', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './arial.css'
+        .then 'build', (c) ->
+          c.getAssets (asset) ->
+            asset.type is 'css-file'
+          .map (asset) ->
+            asset.data
+        .finally (c, files) ->
+          chai.expect(files).to.eql ['./didot.css','./georgia.css']
+          done()
+
+
+      it 'via subtree', (done) ->
+
+        winner = (parent) ->
+          parent.tree('winner')
+          .deliver()
+          .all [winnerchild]
+          .then 'ignore-comic-sans', (c) ->
+            c.registerAsset
+              id: 'display-font-css'
+              type: 'css-file'
+              data: './comic-sans.css'
+          .then 'body-font', (c) ->
+            c.registerAsset
+              id: 'body-font-css'
+              type: 'css-file'
+              data: './georgia.css'
+
+        loser = (parent) ->
+          parent.tree('loser')
+          .deliver()
+          .then 'ignore-marker', (c) ->
+            c.registerAsset
+              id: 'display-font-css'
+              type: 'css-file'
+              data: './marker.css'
+          .then 'ignored-zapfino', (c) ->
+            c.registerAsset
+              id: 'body-font-css'
+              type: 'css-file'
+              data: './zapfino.css'
+
+        testAssetContest [loser,winner], done
+
+      it 'via branching', (done) ->
+
+        contestant = (parent) ->
+          parent.tree('contestant')
+          .deliver()
+          .then (n) ->
+
+            n.branch 'loser', (c) ->
+              c.tree()
+              .deliver()
+              .then 'ignore-marker', (c) ->
+                c.registerAsset
+                  id: 'display-font-css'
+                  type: 'css-file'
+                  data: './marker.css'
+              .then 'ignored-zapfino', (c) ->
+                c.registerAsset
+                  id: 'body-font-css'
+                  type: 'css-file'
+                  data: './zapfino.css'
+
+            # second is chosen...
+            n.branch 'winner', (c) ->
+              c.tree()
+              .deliver()
+              .all [winnerchild]
+              .then 'body-font', (c) ->
+                c.registerAsset
+                  id: 'body-font-css'
+                  type: 'css-file'
+                  data: './georgia.css'
+
+        testAssetContest [contestant], done
+
+
     describe 'multi-level asset registration w/ contest & aborts', ->
       ###
       assets registered by child should not be overwritten by parent
       ###
-      
+
       abortion = (parent) ->
         parent.tree('abortion')
         .deliver()
@@ -255,8 +370,8 @@ describe 'Extensions', ->
         .deliver()
         .then abortionParent
         .then winnergrandchild
-      
-      testAssetContest = (contestants, done) ->        
+
+      testAssetContest = (contestants, done) ->
 
         countdown = 5
         Root 'asset-test', Choice:CustomChoice
@@ -283,10 +398,10 @@ describe 'Extensions', ->
         .finally (c, files) ->
           chai.expect(files).to.eql ['./didot.css','./georgia.css']
           done()
-      
-      
+
+
       it 'via subtree', (done) ->
-        
+
         winner = (parent) ->
           parent.tree('winner')
           .deliver()
@@ -316,16 +431,16 @@ describe 'Extensions', ->
               id: 'body-font-css'
               type: 'css-file'
               data: './zapfino.css'
-        
-        testAssetContest [loser,winner], done        
-      
+
+        testAssetContest [loser,winner], done
+
       it 'via branching', (done) ->
-        
+
         contestant = (parent) ->
           parent.tree('contestant')
           .deliver()
-          .then (n) ->                        
-            
+          .then (n) ->
+
             n.branch 'loser', (c) ->
               c.tree()
               .deliver()
@@ -339,7 +454,7 @@ describe 'Extensions', ->
                   id: 'body-font-css'
                   type: 'css-file'
                   data: './zapfino.css'
-            
+
             # second is chosen...
             n.branch 'winner', (c) ->
               c.tree()
@@ -351,7 +466,7 @@ describe 'Extensions', ->
                   id: 'body-font-css'
                   type: 'css-file'
                   data: './georgia.css'
-          
+
         testAssetContest [contestant], done
 
 
