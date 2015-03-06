@@ -165,6 +165,65 @@ describe 'Thenable named promises', ->
         chai.expect(res).to.eql [1]
         done()
 
+  describe "eating items in subtrees within all", ->
+    it 'should resolve', (done) ->
+      a = (choice, data) ->
+        choice.tree()
+        .deliver data
+        .then (choice, data) ->
+          item = choice.getItem -> true
+          choice.eatItem item
+          data
+
+      b = (choice, data) ->
+        choice.tree()
+        .deliver data
+        .then (choice, data) ->
+          item = choice.getItem -> true
+          choice.eatItem item
+          data
+
+      initialData =
+        items: [
+          { id: 1 }
+          { id: 2 }
+        ]
+
+      t = Root()
+      .deliver initialData
+      .all [a, b]
+      .finally (choice, data) ->
+        chai.expect(choice.availableItems()).to.be.empty
+        done()
+
+  describe "eating items in branches within all", ->
+    it 'should resolve', (done) ->
+      brancher = (choice, data) ->
+        choice.tree()
+        .deliver data
+        .then (choice, data) ->
+          choice.branch 'a', (choice, data) ->
+            item = choice.getItem -> true
+            choice.eatItem item
+            data
+          choice.branch 'b', (choice, data) ->
+            item = choice.getItem -> true
+            choice.eatItem item
+            data
+
+      initialData =
+        items: [
+          { id: 1 }
+          { id: 2 }
+        ]
+
+      t = Root()
+      .deliver initialData
+      .all [brancher]
+      .finally (choice, data) ->
+        chai.expect(choice.availableItems()).to.not.be.empty
+        done()
+
   describe 'with all & return values', ->
 
     y1 = (c, data) ->
