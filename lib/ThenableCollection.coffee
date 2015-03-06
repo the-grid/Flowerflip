@@ -43,6 +43,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (p, d) ->
           p.continuation = val.tree.getRootChoice().continuation
+          choice.registerTentativeSubleaf p
           state.handleResult state.fulfilled, i, p, d, onResult
         val.else (p, e) ->
           log.errors "#{p} resulted in %s", e.message

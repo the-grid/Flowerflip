@@ -30,6 +30,7 @@ class Choice
     @attributes =
       items: []
       itemsEaten: []
+      tentativeItemsEaten: []
       blocksEaten: []
       globalsSet: []
       paths: []
@@ -110,6 +111,7 @@ class Choice
     @onAbort @, reason, value, onBranch
 
   registerSubleaf: (leaf, accepted, consumeWithoutContinuation = true) ->
+    @attributes.tentativeItemsEaten = []
     @subLeaves = [] unless @subLeaves
     @subLeaves.push
       choice: leaf
@@ -120,10 +122,16 @@ class Choice
 
     items = @availableItems()
     leafItems = leaf.availableItems()
-
     for i in items
       continue unless leafItems.indexOf(i) is -1
       @eatItem i, false
+
+  registerTentativeSubleaf: (leaf) ->
+    items = @availableItems()
+    leafItems = leaf.availableItems()
+    for i in items
+      continue unless leafItems.indexOf(i) is -1
+      @attributes.tentativeItemsEaten.push i
 
   acceptedSubleaves: ->
     return [] unless @subLeaves.length
@@ -188,6 +196,11 @@ class Choice
     else if @parentSource
       items = @parentSource.availableItems()
       items = items.concat @attributes.items if @attributes.items.length
+      if @parentSource.attributes.tentativeItemsEaten.length
+        for i in @parentSource.attributes.tentativeItemsEaten
+          idx = items.indexOf(i)
+          continue if idx is -1
+          items.splice idx, 1
     else
       items = @attributes.items
 
