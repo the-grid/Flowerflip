@@ -123,7 +123,7 @@ class Choice
 
     for i in items
       continue unless leafItems.indexOf(i) is -1
-      @eatItem i
+      @eatItem i, false
 
   acceptedSubleaves: ->
     return [] unless @subLeaves.length
@@ -174,8 +174,8 @@ class Choice
         continue
     null
 
-  eatItem: (item, node = null) ->
-    ensureActive @
+  eatItem: (item, checkActive = true) ->
+    ensureActive @ if checkActive
     throw new Error 'No item provided' unless item
     @attributes.itemsEaten.push item
     item
