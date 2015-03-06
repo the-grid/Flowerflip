@@ -285,9 +285,9 @@ describe 'Subtrees', ->
           , (n, chosen) -> # until
             return false if n.availableItems().length
             true
-    
+
       Root()
-      .deliver 
+      .deliver
         items: [
             id: 1
           ,
@@ -301,7 +301,7 @@ describe 'Subtrees', ->
       .finally (n, results) ->
         chai.expect(results.length).to.equal 3
         done()
-          
+
     it 'should work w/ thrown failedComponent', (done) ->
       
       failedComponent = (n,d) ->
