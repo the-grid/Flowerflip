@@ -156,7 +156,9 @@ describe 'Extensions', ->
       grandchild = (parent) ->
         parent.tree('child')
         .deliver()
-        .maybe [abortion]
+        .then abortion
+        .else ->
+          true
         .then 'display-font', (c) ->
           c.registerAsset
             id: 'display-font-css'
@@ -167,6 +169,8 @@ describe 'Extensions', ->
         parent.tree('child')
         .deliver()
         .maybe [abortion]
+        .else ->
+          true
         .then grandchild
         .then 'ignored-font', (c) ->
           c.registerAsset
@@ -219,6 +223,8 @@ describe 'Extensions', ->
         parent.tree('winnergrandchild')
         .deliver()
         .maybe [abortion]
+        .else ->
+          true
         .then 'display-font', (c) ->
           c.registerAsset
             id: 'display-font-css'
@@ -229,6 +235,8 @@ describe 'Extensions', ->
         parent.tree('winnerchild')
         .deliver()
         .maybe [abortion]
+        .else ->
+          true
         .then winnergrandchild
 
       winner = (parent) ->
@@ -236,6 +244,8 @@ describe 'Extensions', ->
         .deliver()
         .all [winnerchild]
         .maybe [abortion]
+        .else ->
+          true
         .then 'ignore-comic-sans', (c) ->
           c.registerAsset
             id: 'display-font-css'
