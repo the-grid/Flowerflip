@@ -49,8 +49,7 @@ class BehaviorTree
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
 
     onAbort = choice.onAbort or @onAbort
-    onAbort = null if @directOnAbort
-    unless onAbort
+    if not onAbort or @directOnAbort
       onAbort = (rChoice, reason, value, branched) =>
         return if branched
         log.tree "#{@name or @id} Non-collection #{rChoice} aborted with %s", reason
@@ -58,6 +57,16 @@ class BehaviorTree
           choice: rChoice
           reason: reason
           value: value
+      tree.directOnAbort = true
+    else
+      origOnAbort = onAbort
+      onAbort = (rChoice, reason, value, branched) ->
+        unless branched
+          tree.aborted.push
+            choice: rChoice
+            reason: reason
+            value: value
+        origOnAbort rChoice, reason, value, branched
       tree.directOnAbort = true
 
     tree.onAbort = onAbort
