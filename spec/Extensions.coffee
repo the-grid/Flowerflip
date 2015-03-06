@@ -153,15 +153,23 @@ describe 'Extensions', ->
         .then (c) ->
           c.abort "too ugly"
 
-      grandchild = (parent) ->
-        parent.tree('child')
+      abortionParent = (parent) ->
+        parent.tree('abortionParent')
         .deliver()
+        .some [abortion,abortion]
+        .else ->
+          true
+        .maybe [abortion]
+        .else ->
+          true
         .then abortion
         .else ->
           true
-        .some [abortion]
-        .else ->
-          true
+
+      grandchild = (parent) ->
+        parent.tree('child')
+        .deliver()
+        .then abortionParent
         .then 'display-font', (c) ->
           c.registerAsset
             id: 'display-font-css'
@@ -171,12 +179,7 @@ describe 'Extensions', ->
       child = (parent) ->
         parent.tree('child')
         .deliver()
-        .then abortion
-        .else ->
-          true
-        .maybe [abortion]
-        .else ->
-          true
+        .then abortionParent
         .then grandchild
         .then 'ignored-font', (c) ->
           c.registerAsset
@@ -225,15 +228,23 @@ describe 'Extensions', ->
         .then (c) ->
           c.abort "too ugly"
 
-      winnergrandchild = (parent) ->
-        parent.tree('winnergrandchild')
+      abortionParent = (parent) ->
+        parent.tree('abortionParent')
         .deliver()
-        .then abortion
+        .some [abortion,abortion]
         .else ->
           true
         .maybe [abortion]
         .else ->
           true
+        .then abortion
+        .else ->
+          true
+
+      winnergrandchild = (parent) ->
+        parent.tree('winnergrandchild')
+        .deliver()
+        .then abortionParent
         .then 'display-font', (c) ->
           c.registerAsset
             id: 'display-font-css'
@@ -243,24 +254,14 @@ describe 'Extensions', ->
       winnerchild = (parent) ->
         parent.tree('winnerchild')
         .deliver()
-        .then abortion
-        .else ->
-          true
-        .some [abortion]
-        .else ->
-          true
+        .then abortionParent
         .then winnergrandchild
 
       winner = (parent) ->
         parent.tree('winner')
         .deliver()
         .all [winnerchild]
-        .maybe [abortion]
-        .else ->
-          true
-        .then abortion
-        .else ->
-          true
+        .then abortionParent
         .then 'ignore-comic-sans', (c) ->
           c.registerAsset
             id: 'display-font-css'
