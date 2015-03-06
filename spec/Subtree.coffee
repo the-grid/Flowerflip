@@ -241,7 +241,6 @@ describe 'Subtrees', ->
   describe 'section example', ->
     
     testSections = (failedComponent, done) ->
-    
       component = (n,d) ->
         n.tree 'component'
         .deliver()
@@ -280,7 +279,7 @@ describe 'Subtrees', ->
       layout = (n, sections) ->
         n.tree 'layout'
         .deliver()
-        .contest sections        
+        .contest sections
           , (n, results) -> # scoring
             return results[0]
           , (n, chosen) -> # until
@@ -299,7 +298,7 @@ describe 'Subtrees', ->
       .then ->
         [section]
       .then layout
-      .then (n, results) ->
+      .finally (n, results) ->
         chai.expect(results.length).to.equal 3
         done()
           
