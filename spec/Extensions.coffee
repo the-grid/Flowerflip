@@ -137,13 +137,26 @@ describe 'Extensions', ->
         done()
 
 
-    it '3 level asset registration', (done) ->
+    it '3 level asset registration w/ aborts', (done) ->
       ###
       assets registered by child should not be overwritten by parent
       ###
+
+      abortion = (parent) ->
+        parent.tree('abortion')
+        .deliver()
+        .then 'ignore-ugly', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './ugly.css'
+        .then (c) ->
+          c.abort "too ugly"
+
       grandchild = (parent) ->
         parent.tree('child')
         .deliver()
+        .maybe [abortion]
         .then 'display-font', (c) ->
           c.registerAsset
             id: 'display-font-css'
@@ -153,6 +166,7 @@ describe 'Extensions', ->
       child = (parent) ->
         parent.tree('child')
         .deliver()
+        .maybe [abortion]
         .then grandchild
         .then 'ignored-font', (c) ->
           c.registerAsset
@@ -164,12 +178,105 @@ describe 'Extensions', ->
             id: 'body-font-css'
             type: 'css-file'
             data: './georgia.css'
+
       Root 'asset-test', Choice:CustomChoice
       .deliver {}
       .then 'start', ->
         true
       .then child
       .then 'ignored-font', (c) ->
+        c.registerAsset
+          id: 'display-font-css'
+          type: 'css-file'
+          data: './arial.css'
+      .then 'build', (c) ->
+        c.getAssets (asset) ->
+          asset.type is 'css-file'
+        .map (asset) ->
+          asset.data
+      .finally (c, files) ->
+        chai.expect(files).to.eql ['./didot.css','./georgia.css']
+        done()
+
+
+    it 'multi-level asset registration w/ contest & aborts', (done) ->
+      ###
+      assets registered by child should not be overwritten by parent
+      ###
+
+      abortion = (parent) ->
+        parent.tree('abortion')
+        .deliver()
+        .then 'ignore-ugly', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './ugly.css'
+        .then (c) ->
+          c.abort "too ugly"
+
+      winnergrandchild = (parent) ->
+        parent.tree('winnergrandchild')
+        .deliver()
+        .maybe [abortion]
+        .then 'display-font', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './didot.css'
+
+      winnerchild = (parent) ->
+        parent.tree('winnerchild')
+        .deliver()
+        .maybe [abortion]
+        .then winnergrandchild
+
+      winner = (parent) ->
+        parent.tree('winner')
+        .deliver()
+        .all [winnerchild]
+        .maybe [abortion]
+        .then 'ignore-comic-sans', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './comic-sans.css'
+        .then 'body-font', (c) ->
+          c.registerAsset
+            id: 'body-font-css'
+            type: 'css-file'
+            data: './georgia.css'
+
+      loser = (parent) ->
+        parent.tree('loser')
+        .deliver()
+        .then 'ignore-marker', (c) ->
+          c.registerAsset
+            id: 'display-font-css'
+            type: 'css-file'
+            data: './marker.css'
+        .then 'ignored-zapfino', (c) ->
+          c.registerAsset
+            id: 'body-font-css'
+            type: 'css-file'
+            data: './zapfino.css'
+
+      countdown = 5
+      Root 'asset-test', Choice:CustomChoice
+      .deliver {}
+      .then 'start', ->
+        true
+      .contest [loser,winner]
+
+        , (n, results) -> # scoring
+          return results[1]
+
+        , (n, chosen) -> # until
+          countdown--
+          return false if countdown
+          true
+
+      .then 'ignore-arial', (c) ->
         c.registerAsset
           id: 'display-font-css'
           type: 'css-file'
