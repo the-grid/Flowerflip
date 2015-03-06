@@ -236,3 +236,5 @@ describe 'Subtrees', ->
           chai.expect(res).to.be.an 'array'
           chai.expect(res).to.eql [ 15 ]
           done()
+
+

@@ -194,8 +194,7 @@ describe 'Extensions', ->
 
       Root 'asset-test', Choice:CustomChoice
       .deliver {}
-      .then 'start', ->
-        true
+      .then abortionParent
       .then child
       .then 'ignored-font', (c) ->
         c.registerAsset
