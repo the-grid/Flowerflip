@@ -156,6 +156,7 @@ class Thenable
             chosen = score subChoice, fulfills, chosenSolutions
             unless chosen.choice
               subChoice.error "Chosen solution doesn't contain a choice node"
+              return
             subChoice.registerSubleaf chosen.choice, true, true
             for f in fulfills
               continue unless f.choice
