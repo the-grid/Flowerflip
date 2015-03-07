@@ -703,6 +703,41 @@ describe 'Thenable named promises', ->
         chai.expect(data.nopes).to.equal 3
         done()
 
+
+  describe 'with simple contest', ->
+
+    winner = (parent) ->
+      parent.tree()
+      .deliver()
+      .then ->
+        'winner'
+    loser = (parent) ->
+      parent.tree()
+      .deliver()
+      .then (n) ->
+        n.abort 'loser'
+
+    it 'aborted contestants not in results', (done) ->
+      Root()
+      .deliver()
+      .contest [loser, loser, loser, winner]
+        , (c, results) ->
+          results[0]
+      .then (c, res) ->
+        chai.expect(res).to.eql ['winner']
+        done()
+
+    it 'fails with all aborted contestants', (done) ->
+      Root()
+      .deliver()
+      .contest [loser, loser, loser, loser, loser]
+        , (c, results) ->
+          results[0]
+      .else (c, res) ->
+        chai.expect(res.reason).to.eql 'loser'
+        done()
+
+
   describe 'with contest & simple scoring', ->
     it 'should resolve', (done) ->
       multiply = (multiplier, orig, data) ->
