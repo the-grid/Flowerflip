@@ -4,6 +4,39 @@ Root = require '../lib/Root'
 
 describe 'Subtrees', ->
 
+  describe 'using subtree with continue', ->
+    it 'should generate good path', (done) ->
+      treeComposition = (c, d) ->
+        sub = c.continue 'subtree_c'
+        sub.deliver d
+        sub.then 'subthen0', (c, d) ->
+          d
+        .then 'subthen1', (c, d) ->
+          d
+      t = Root()
+      t.deliver 10
+      .then 'then0', (c, d) ->
+        d
+      .all 'allin', [
+        treeComposition.bind @
+        treeComposition.bind @
+      ]
+      .then 'then1', (c, d) ->
+        d
+      .finally (c, d) ->
+        exp = {
+          path: [
+             'then0',
+             'allin',
+             'subtree_c',
+             'subthen0',
+             'subthen1',
+             'then1']
+          children: []
+        }
+        chai.expect(c.toSong()).to.eql exp
+        done()
+
   describe 'child of then', ->
 
     testChild = (child, expected) ->
@@ -155,174 +188,6 @@ describe 'Subtrees', ->
         state:'w-child'
 
 
-  describe 'get & set', ->
-
-    describe 'non-existent attribute lookup in tree', ->
-      it 'should return null', (done) ->
-
-        direct = (orig, data) ->
-          subtree = orig.tree 'directcalc'
-          subtree.deliver data
-          t = subtree.then 'tripled', (c, d) ->
-            chai.expect(c.get('non-existant1')).to.equal null
-            d * 3
-
-        t = Root()
-        t.deliver 5
-        .all [direct]
-        .finally (c, res) ->
-          chai.expect(c.get('non-existant2')).to.equal null
-          chai.expect(res).to.be.an 'array'
-          chai.expect(res).to.eql [
-            15
-          ]
-          done()
-
-    describe 'non-existant attribute lookup in continue tree', ->
-      it 'should return null', (done) ->
-        direct = (orig, data) ->
-          subtree = orig.continue 'directcalc'
-          subtree.deliver data
-          t = subtree.then 'tripled', (c, d) ->
-            chai.expect(c.get('non-existant1')).to.equal null
-            d * 3
-
-        t = Root()
-        t.deliver 5
-        .all [direct]
-        .finally (c, res) ->
-          chai.expect(c.get('non-existant2')).to.equal null
-          chai.expect(res).to.be.an 'array'
-          chai.expect(res).to.eql [ 15 ]
-          done()
-
-    describe 'attribute lookup in continue tree', ->
-      it 'should return null', (done) ->
-        direct = (orig, data) ->
-          subtree = orig.continue 'directcalc'
-          subtree.deliver data
-          t = subtree.then 'tripled', (c, d) ->
-            c.set 'existant2', 'foo'
-            chai.expect(c.get('non-existant1')).to.equal null
-            d * 3
-
-        t = Root()
-        t.deliver 5
-        .all [direct]
-        .finally (c, res) ->
-          chai.expect(c.get('existant2')).to.equal 'foo'
-          chai.expect(res).to.be.an 'array'
-          chai.expect(res).to.eql [ 15 ]
-          done()
-
-    describe 'attribute lookup in parent continue tree', ->
-      it 'should return null', (done) ->
-        direct = (orig, data) ->
-          subtree = orig.continue 'directcalc'
-          subtree.deliver data
-          t = subtree.then 'tripled', (c, d) ->
-            chai.expect(c.get('non-existant1')).to.equal null
-            chai.expect(c.get('existant2')).to.equal 'foo'
-            d * 3
-
-        t = Root()
-        t.deliver 5
-        .then "bar", (n, v) ->
-          n.set 'existant2', 'foo'
-          v
-        .all "foo", [direct]
-        .finally (c, res) ->
-          chai.expect(c.get('existant2')).to.equal 'foo'
-          chai.expect(res).to.be.an 'array'
-          chai.expect(res).to.eql [ 15 ]
-          done()
-          
-  
-  describe 'section example', ->
-    
-    testSections = (failedComponent, done) ->
-      component = (n,d) ->
-        n.tree 'component'
-        .deliver()
-        .then failedComponent
-        .else 'subcomponent-optional', ->
-          true
-        .then ->
-          true
-    
-      post = (n,d) ->
-        n.tree 'post'
-        .deliver()
-        .then (n) ->
-          item = n.getItem (item) ->
-            item
-          n.eatItem item
-          item
-        .then component
-        .else (n) ->
-          n.abort('component required')
-        .then failedComponent
-        .else 'component-optional', ->
-          true
-        .all [component, failedComponent]
-        .else 'components-optional', ->
-          true
-        .some [component, failedComponent]
-            
-      section = (n,d) ->
-        n.tree 'section'
-        .deliver()
-        .then post
-        .then ->
-          'section'
-    
-      layout = (n, sections) ->
-        n.tree 'layout'
-        .deliver()
-        .contest sections
-          , (n, results) -> # scoring
-            return results[0]
-          , (n, chosen) -> # until
-            return false if n.availableItems().length
-            true
-
-      Root()
-      .deliver
-        items: [
-            id: 1
-          ,
-            id: 2
-          ,
-            id: 3
-        ]
-      .then ->
-        [section]
-      .then layout
-      .finally (n, results) ->
-        chai.expect(results.length).to.equal 3
-        done()
-
-    it 'should work w/ thrown failedComponent', (done) ->
-      
-      failedComponent = (n,d) ->
-        n.tree 'failedComponent'
-        .deliver()
-        .then (n) ->
-          throw 'failedComponent thrown'
-      
-      testSections failedComponent, done
-    
-    it 'should work w/ aborted failedComponent', (done) ->
-      
-      failedComponent = (n,d) ->
-        n.tree 'failedComponent'
-        .deliver()
-        .then (n) ->
-          n.abort('failedComponent aborted')
-      
-      testSections failedComponent, done
-      
-      
 
 
 
