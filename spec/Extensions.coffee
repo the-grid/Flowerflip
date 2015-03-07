@@ -432,6 +432,7 @@ describe 'Extensions', ->
               type: 'css-file'
               data: './zapfino.css'
 
+        # second is chosen...
         testAssetContest [loser,winner], done
 
       it 'via branching', (done) ->
