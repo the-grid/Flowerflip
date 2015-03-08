@@ -532,6 +532,20 @@ describe 'Thenable', ->
           done()
 
     describe "eating items in branches within all", ->
+
+      test = (brancher, done) ->
+        initialData =
+          items: [
+            { id: 1 }
+            { id: 2 }
+          ]
+        t = Root()
+        .deliver initialData
+        .all [brancher]
+        .finally (choice, data) ->
+          chai.expect(choice.availableItems()).to.not.be.empty
+          done()
+
       it 'should resolve', (done) ->
         brancher = (choice, data) ->
           choice.tree()
@@ -545,19 +559,29 @@ describe 'Thenable', ->
               item = choice.getItem -> true
               choice.eatItem item
               data
+        test brancher, done
 
-        initialData =
-          items: [
-            { id: 1 }
-            { id: 2 }
-          ]
+      it 'with continue wraps should resolve', (done) ->
+        brancher = (choice, data) ->
+          choice.tree()
+          .deliver data
+          .then (c, data) ->
+            c.continue()
+            .deliver(data)
+            .then (c, data) ->
+              c.continue()
+              .deliver(data)
+              .then (choice, data) ->
+                choice.branch 'a', (choice, data) ->
+                  item = choice.getItem -> true
+                  choice.eatItem item
+                  data
+                choice.branch 'b', (choice, data) ->
+                  item = choice.getItem -> true
+                  choice.eatItem item
+                  data
+        test brancher, done
 
-        t = Root()
-        .deliver initialData
-        .all [brancher]
-        .finally (choice, data) ->
-          chai.expect(choice.availableItems()).to.not.be.empty
-          done()
 
     describe 'with all & return values', ->
 
