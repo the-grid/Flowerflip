@@ -363,6 +363,44 @@ describe 'Extensions', ->
         testAssetContest [contestant], done
 
 
+      it 'via continue-wrapped branching', (done) ->
+
+        contestant = (parent) ->
+          parent.tree('contestant')
+          .deliver()
+          .then (n) ->
+            n.continue()
+            .deliver()
+            .then (choice) ->
+
+              choice.branch 'loser', (c) ->
+                c.continue()
+                .deliver()
+                .then 'ignore-marker', (c) ->
+                  c.registerAsset
+                    id: 'display-font-css'
+                    type: 'css-file'
+                    data: './marker.css'
+                .then 'ignored-zapfino', (c) ->
+                  c.registerAsset
+                    id: 'body-font-css'
+                    type: 'css-file'
+                    data: './zapfino.css'
+
+              # second is chosen...
+              choice.branch 'winner', (c) ->
+                c.continue()
+                .deliver()
+                .all [winnerchild]
+                .then 'body-font', (c) ->
+                  c.registerAsset
+                    id: 'body-font-css'
+                    type: 'css-file'
+                    data: './georgia.css'
+
+        testAssetContest [contestant], done
+
+
     describe 'multi-level asset registration w/ contest & aborts', ->
       ###
       assets registered by child should not be overwritten by parent
