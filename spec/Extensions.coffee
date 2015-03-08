@@ -136,6 +136,43 @@ describe 'Extensions', ->
         chai.expect(files).to.eql ['./didot.css','./georgia.css']
         done()
 
+    it '2 level asset registration via branches', (done) ->
+      ###
+      assets registered by child should not be overwritten by parent
+      ###
+      child = (parent) ->
+        parent.tree('child')
+        .deliver()
+        .then 'display-font', (c) ->
+          c.branch (b) ->
+            b.registerAsset
+              id: 'display-font-css'
+              type: 'css-file'
+              data: './didot.css'
+        .then 'body-font', (c) ->
+          c.registerAsset
+            id: 'body-font-css'
+            type: 'css-file'
+            data: './georgia.css'
+      Root 'asset-test', Choice:CustomChoice
+      .deliver {}
+      .then 'start', ->
+        true
+      .then child
+      .then 'ignored-font', (c) ->
+        c.registerAsset
+          id: 'display-font-css'
+          type: 'css-file'
+          data: './arial.css'
+      .then 'build', (c) ->
+        c.getAssets (asset) ->
+          asset.type is 'css-file'
+        .map (asset) ->
+          asset.data
+      .finally (c, files) ->
+        chai.expect(files).to.eql ['./didot.css','./georgia.css']
+        done()
+
 
     it '3 level asset registration w/ aborts', (done) ->
       ###
