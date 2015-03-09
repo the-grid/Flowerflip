@@ -144,7 +144,7 @@ describe 'Extensions', ->
         parent.tree('child')
         .deliver()
         .then 'display-font', (c) ->
-          c.branch (b) ->
+          c.branch 'b', (b) ->
             b.registerAsset
               id: 'display-font-css'
               type: 'css-file'

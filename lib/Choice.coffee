@@ -73,6 +73,8 @@ class Choice
     @onSubtree @, name, true, callback
 
   branch: (name, callback = ->) ->
+    if typeof name isnt 'string'
+      throw new Error 'Branches cannot be anonymous'
     unless typeof @onBranch is 'function'
       throw new Error 'Cannot branch without external onBranch'
     id = name.replace /-/g, '_'
