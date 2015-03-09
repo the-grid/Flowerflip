@@ -4,6 +4,7 @@ debug = require 'debug'
 log =
   tree: debug 'tree'
   errors: debug 'errors'
+  values: debug 'values'
 
 exports.run = (tasks, composite, choice, data, onResult) ->
   if typeof tasks is 'function'
@@ -26,7 +27,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
   composite.tree.directOnAbort = false
   choice.onAbort = composite.tree.onAbort
 
-  state = new SubtreeResults tasks.length
+  state = new SubtreeResults tasks.length, choice
   unless tasks.length
     state.handleResult state.rejected, 0, null, new Error("No tasks provided"), onResult
     return
@@ -42,6 +43,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (p, d) ->
+          log.values "#{choice} task #{i} #{p} resulted in %s", d
           p.continuation = val.tree.getRootChoice().continuation
           choice.registerTentativeSubleaf p
           state.handleResult state.fulfilled, i, p, d, onResult
@@ -51,6 +53,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
           p.continuation = val.tree.getRootChoice().continuation
           state.handleResult state.rejected, i, p, e, onResult
         return
+      log.values "#{choice} task #{i} resulted in %s", val
       state.handleResult state.fulfilled, i, null, val, onResult
     catch e
       log.errors "#{choice} task #{i} resulted in %s", e.message

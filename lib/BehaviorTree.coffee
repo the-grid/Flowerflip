@@ -24,6 +24,7 @@ debug = require 'debug'
 log =
   tree: debug 'tree'
   errors: debug 'errors'
+  values: debug 'values'
 graphlib = require 'graphlib'
 dot = require 'graphlib-dot'
 
@@ -44,7 +45,7 @@ class BehaviorTree
     @aborted = []
 
   onSubtree: (choice, name, continuation, callback) =>
-    log.tree "#{@name or @id} new subtree #{name} from #{choice}"
+    log.tree "#{@name or @id} new #{if continuation then 'continuation' else 'subtree'} #{name} from #{choice}"
     tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
 
@@ -202,6 +203,7 @@ class BehaviorTree
         choice.subtrees = [] unless choice.subtrees
         choice.subtrees.push val.tree
         val.then (c, r) =>
+          log.values "#{choice} sub-promise #{c} resulted in %s", r
           choice.set 'data', r if isActive choice
           choice.state = State.FULFILLED if isActive choice
           c.continuation = val.tree.getRootChoice().continuation
@@ -225,6 +227,7 @@ class BehaviorTree
 
         return
       # Straight-up value returned
+      log.values "#{choice} resulted in %s", val
       choice.set 'data', val if isActive choice
       choice.state = State.FULFILLED if isActive choice
       @resolve node.id, sourcePath

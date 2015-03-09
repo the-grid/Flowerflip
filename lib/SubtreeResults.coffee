@@ -1,5 +1,5 @@
 class SubtreeResults
-  constructor: (@tasks) ->
+  constructor: (@tasks, choice) ->
     @finished = false
     @branches = []
     @aborted = []

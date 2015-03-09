@@ -68,6 +68,7 @@ class Choice
     @onSubtree @, name, false, callback
 
   continue: (name, callback = ->) ->
+    name = null unless name
     unless typeof @onSubtree is 'function'
       throw new Error 'Cannot continue tree without external onSubtree'
     @onSubtree @, name, true, callback

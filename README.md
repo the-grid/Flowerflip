@@ -9,6 +9,7 @@ Decision-tree based Finite Domain Constraint Solver, used for building layouts f
 To see more information on a running Flowerflip setup, there are two log settings available:
 
 * `errors`: see details about failed preconditions, aborted trees, and other errors
+* `values`: see the return values of the promises in the tree
 * `tree`: see details about tree execution, including which node is currently being executed
 
 To use these, run Flowerflip with the `DEBUG` environment variable set, for example:
