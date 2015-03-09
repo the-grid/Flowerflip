@@ -194,7 +194,9 @@ class BehaviorTree
       node.choices[sourcePath] = choice
     choice = node.choices[sourcePath]
     localPath = node.choices[sourcePath].toString()
-    return if choice.state in [State.ABORTED, State.RUNNING]
+    if choice.state in [State.ABORTED, State.RUNNING]
+      log.tree "#{@name or @id} #{choice} was already executed, ignoring"
+      return
     choice.state = State.RUNNING
     try
       val = node.callback choice, data
@@ -203,7 +205,7 @@ class BehaviorTree
         choice.subtrees = [] unless choice.subtrees
         choice.subtrees.push val.tree
         val.then (c, r) =>
-          log.values "#{choice} sub-promise #{c} resulted in %s", r
+          log.values "#{@name or @id} #{choice} sub-promise #{c} resulted in %s", r
           choice.set 'data', r if isActive choice
           choice.state = State.FULFILLED if isActive choice
           c.continuation = val.tree.getRootChoice().continuation
@@ -227,7 +229,7 @@ class BehaviorTree
 
         return
       # Straight-up value returned
-      log.values "#{choice} resulted in %s", val
+      log.values "#{@name or @id} #{choice} resulted directly in #{typeof val} %s", val
       choice.set 'data', val if isActive choice
       choice.state = State.FULFILLED if isActive choice
       @resolve node.id, sourcePath
