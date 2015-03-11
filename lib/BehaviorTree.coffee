@@ -45,9 +45,9 @@ class BehaviorTree
     @aborted = []
 
   onSubtree: (choice, name, continuation, callback) =>
-    log.tree "#{@name or @id} new #{if continuation then 'continuation' else 'subtree'} #{name} from #{choice}"
     tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
+    log.tree "#{@name or @id} new #{if continuation then 'continuation' else 'subtree'} #{tree.name or tree.id} from #{choice}"
 
     onAbort = choice.onAbort or @onAbort
     if not onAbort or @directOnAbort
