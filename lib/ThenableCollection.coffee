@@ -43,7 +43,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         val.then (p, d) ->
-          log.values "#{choice} task #{i} #{p} resulted in %s", d
+          log.values "#{choice} task #{i} #{p} resulted in #{typeof d} %s", d
           p.continuation = val.tree.getRootChoice().continuation
           choice.registerTentativeSubleaf p
           state.handleResult state.fulfilled, i, p, d, onResult
@@ -53,7 +53,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
           p.continuation = val.tree.getRootChoice().continuation
           state.handleResult state.rejected, i, p, e, onResult
         return
-      log.values "#{choice} task #{i} resulted in %s", val
+      log.values "#{choice} task #{i} resulted directly in #{typeof val} %s", val
       state.handleResult state.fulfilled, i, null, val, onResult
     catch e
       log.errors "#{choice} task #{i} resulted in %s", e.message
