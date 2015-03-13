@@ -158,6 +158,7 @@ class Choice
     ensureActive @
     if name in ['itemsEaten', 'blocksEaten']
       throw new Error "#{name} attribute must be modified via the eat method"
+    return if name is 'items' and @parentSource
     @attributes[name] = value
 
   getGlobal: (name) ->
