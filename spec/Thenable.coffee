@@ -1415,7 +1415,7 @@ describe 'Thenable', ->
         testSections failedComponent, done
 
 
-    describe.only 'layout system simulation w/ advanced item lookup', ->
+    describe 'layout system simulation w/ advanced item lookup', ->
 
       testSections = (done) ->
 
