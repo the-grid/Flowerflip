@@ -1415,9 +1415,9 @@ describe 'Thenable', ->
         testSections failedComponent, done
 
 
-    describe 'layout system simulation w/ advanced item lookup', ->
+    describe 'alt layout system simulation', ->
 
-      testSections = (done) ->
+      test = (done) ->
 
         failedComponent = (n,d) ->
           n.tree 'failedComponent'
@@ -1471,8 +1471,6 @@ describe 'Thenable', ->
               n.eatItem item
               item
             .all components
-            #.then (n, results) ->
-            #  console.log "!!!!!", n.availableItems().length
             .else (n,d) ->
               n.abort('post: missing required component',d)
 
@@ -1484,10 +1482,8 @@ describe 'Thenable', ->
               true
             .all posts
             .then (n,results) ->
-              #console.log "YAY", name
-              results
+              name
             .else (n,d) ->
-              #console.log "boo", name, d
               n.abort('section: posts failed',d)
 
         imageSection = section('imageSection',[
@@ -1504,16 +1500,13 @@ describe 'Thenable', ->
 
         sections = [videoTextSection, imageSection, textSection]
 
-        contestCount = 0
         layout = (n) ->
           n.tree 'layout'
           .deliver()
           .contest sections
             , (n, results) -> # scoring
-              contestCount++
               return results[0]
             , (n, chosen) -> # until
-              #console.log JSON.stringify n.availableItems()
               return false if n.availableItems().length
               true
 
@@ -1538,10 +1531,10 @@ describe 'Thenable', ->
           ]
         .then layout
         .finally (n, results) ->
-          console.log results
           chai.expect(results.length).to.equal 3
+          chai.expect(results).to.eql ['videoTextSection','textSection','imageSection']
           done()
 
       it 'should work', (done) ->
-        testSections done
+        test done
 
