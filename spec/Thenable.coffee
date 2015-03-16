@@ -256,6 +256,7 @@ describe 'Thenable', ->
                 btree.deliver data
                 btree.then 'btreethen', (c, data) ->
                   data * 3
+              return
         t = Root()
         t.deliver 5
         .contest "contest-multiply", [
