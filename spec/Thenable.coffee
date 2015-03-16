@@ -1233,15 +1233,15 @@ describe 'Thenable', ->
       it 'should resolve', (done) ->
 
         failedComponent = (n,d) ->
-          n.tree 'failedComponent'
+          n.continue 'failedComponent'
           .deliver()
           .then (n) ->
             n.abort('failedComponent aborted')
 
         component = (n,d) ->
-          n.tree 'component'
+          n.continue 'component'
           .deliver d
-          .maybe failedComponent
+          .then failedComponent
           .else (c,d) ->
             d
           .then (c, d) ->
@@ -1257,16 +1257,16 @@ describe 'Thenable', ->
             c.branch 'tripled', (b, data) ->
               data * 3
 
-          .maybe failedComponent
-          .else (c,d) ->
-            d
+          # .maybe failedComponent
+          # .else (c,d) ->
+          #   d
 
           .then 'variation', (c, d) ->
             c.branch 'top', (b, data) ->
               data * 3
             c.branch 'bottom', (b, data) ->
               data * 3
-              
+
            .all [component]
            .then (n,results) ->
              results[0]
@@ -1589,3 +1589,137 @@ describe 'Thenable', ->
 
       it 'should work', (done) ->
         test done
+
+
+  describe 'alt layout system simulation with branching variation', ->
+
+    test = (done) ->
+
+      failedComponent = (n,d) ->
+        n.tree 'failedComponent'
+        .deliver()
+        .then (n) ->
+          n.abort('failedComponent aborted')
+
+      text = (n,item) ->
+        n.tree 'text-component'
+        .deliver(item)
+        .then (n,item) ->
+          block = n.getBlock item, (b) ->
+            b.type is 'text'
+          n.expect( block ).to.be.an 'object'
+          n.eatBlock block
+          block
+        .else (n,d) ->
+          n.abort "text not there", d
+
+      video = (n,item) ->
+        n.tree 'video-component'
+        .deliver(item)
+        .then (n,item) ->
+          block = n.getBlock item, (b) ->
+            b.type is 'video'
+          n.expect( block ).to.be.an 'object'
+          n.eatBlock block
+          block
+        .else (n,d) ->
+          n.abort "video not there", d
+
+      image = (n,item) ->
+        n.tree 'image-component'
+        .deliver(item)
+        .then (n,item) ->
+          block = n.getBlock item, (b) ->
+            b.type is 'image'
+          n.expect( block ).to.be.an 'object'
+          n.eatBlock block
+          block
+        .else (n,d) ->
+          n.abort "image not there", d
+
+      post = (components) ->
+        return (n,d) ->
+          n.tree 'post'
+          .deliver()
+          .then (n) ->
+            item = n.getItem (item) ->
+              item?
+            n.eatItem item
+            item
+          .all components
+          .else (n,d) ->
+            n.abort('post: missing required component',d)
+
+      section = (name,posts) ->
+        return (n,d) ->
+          n.tree 'section'
+          .deliver()
+          .then name, ->
+            true
+          .then (c, d) ->
+            c.branch 'left', ->
+              d
+            c.branch 'right', ->
+              d
+          .then (c, d) ->
+            c.branch 'top', ->
+              d
+            c.branch 'bottom', ->
+              d
+          .all posts
+          .then (n,results) ->
+            name
+          .else (n,d) ->
+            n.abort('section: posts failed',d)
+
+      imageSection = section('imageSection',[
+          post([image])
+        ])
+
+      textSection = section('textSection',[
+          post([text])
+        ])
+
+      videoTextSection = section('videoTextSection',[
+          post([video,text])
+        ])
+
+      sections = [videoTextSection, imageSection, textSection]
+
+      layout = (n) ->
+        n.tree 'layout'
+        .deliver()
+        .contest sections
+          , (n, results) -> # scoring
+            return results[0]
+          , (n, chosen) -> # until
+            return false if n.availableItems().length
+            true
+
+      Root()
+      .deliver
+        items: [
+            id: 1
+            content: [
+              {type:'text'}
+              {type:'video'}
+            ]
+          ,
+            id: 2
+            content: [
+              {type:'text'}
+            ]
+          ,
+            id: 3
+            content: [
+              {type:'image'}
+            ]
+        ]
+      .then layout
+      .finally (n, results) ->
+        chai.expect(results.length).to.equal 3
+        chai.expect(results).to.eql ['videoTextSection','textSection','imageSection']
+        done()
+
+    it 'should work', (done) ->
+      test done
