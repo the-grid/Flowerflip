@@ -1229,6 +1229,58 @@ describe 'Thenable', ->
           chai.expect(res).to.eql [15]
           done()
 
+    describe 'contest via subbranching w/ abortions', ->
+      it 'should resolve', (done) ->
+
+        failedComponent = (n,d) ->
+          n.tree 'failedComponent'
+          .deliver()
+          .then (n) ->
+            n.abort('failedComponent aborted')
+
+        component = (n,d) ->
+          n.tree 'component'
+          .deliver d
+          .maybe failedComponent
+          .else (c,d) ->
+            d
+          .then (c, d) ->
+            d
+
+        multiply = (multiplier, c, data) ->
+          c.tree 'a'
+          .deliver data
+
+          .then "#{multiplier}", (c, d) ->
+            c.branch 'doubled', (b, data) ->
+              data * 6
+            c.branch 'tripled', (b, data) ->
+              data * 3
+
+          .maybe failedComponent
+          .else (c,d) ->
+            d
+
+          .then 'variation', (c, d) ->
+            c.branch 'top', (b, data) ->
+              data * 3
+            c.branch 'bottom', (b, data) ->
+              data * 3
+              
+           .all [component]
+           .then (n,results) ->
+             results[0]
+        Root()
+        .deliver 5
+        .contest "contest-multiply", [
+          multiply.bind @, 2
+        ], (c, results) ->
+          results[0]
+        .finally 'enfin-fini',   (c, res) ->
+          chai.expect(res).to.eql [45]
+          done()
+
+
 
 
    #d88888ba                                   88
@@ -1537,4 +1589,3 @@ describe 'Thenable', ->
 
       it 'should work', (done) ->
         test done
-
