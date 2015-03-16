@@ -13,16 +13,23 @@ exports.run = (tasks, composite, choice, data, onResult) ->
   choice.parentOnBranch = (tree, orig, branch, callback) ->
     unless orig.state is State.ABORTED
       orig.abort "Branched off to #{branch}", null, true
+      found = state.aborted.filter (a) -> a.choice is orig
+      unless found.length
+        state.aborted.push
+          branched: true
+          choice: orig
     state.branches.push branch
 
   composite.tree.onAbort = (rChoice, reason, value, branched) ->
     log.tree "#{choice} task #{rChoice} aborted with %s", reason unless branched
     value = new Error reason unless value
-    state.aborted.push
-      branched: branched
-      choice: rChoice
-      reason: reason
-      value: value
+    found = state.aborted.filter (a) -> a.choice is rChoice
+    unless found.length
+      state.aborted.push
+        branched: branched
+        choice: rChoice
+        reason: reason
+        value: value
     onResult state, value unless branched
   composite.tree.directOnAbort = false
   choice.onAbort = composite.tree.onAbort
