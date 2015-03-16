@@ -76,12 +76,17 @@ class Choice
       throw new Error 'Cannot continue tree without external onSubtree'
     @onSubtree @, name, true, callback
 
-  branch: (name, callback = ->) ->
-    if typeof name isnt 'string'
+  branch: (name, callback = null, silent = false) ->
+    unless callback
+      callback = ->
+    if typeof name isnt 'string' and not silent
       throw new Error 'Branches cannot be anonymous'
     unless typeof @onBranch is 'function'
       throw new Error 'Cannot branch without external onBranch'
-    id = name.replace /-/g, '_'
+    @branches = 0 unless @branches
+    @branches++
+    id = name.replace /-/g, '_' if name
+    id = "#{@id}_b#{@branches}" unless name
     branch = @createChoice @source, id, name
     branch.state = State.PENDING
     branch.onBranch = @onBranch
@@ -93,7 +98,7 @@ class Choice
       continue if key in ['path', 'id', 'aborted']
       branch.attributes[key] = val
 
-    @onBranch @, branch, callback
+    @onBranch @, branch, callback, silent
 
     branch
 
