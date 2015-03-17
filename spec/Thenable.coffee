@@ -1228,7 +1228,7 @@ describe 'Thenable', ->
           chai.expect(res).to.eql [15]
           done()
 
-    describe 'contest via subbranching w/ abortions', ->
+    describe 'contest via subbranching w/ abortions & branch order', ->
       it 'should resolve', (done) ->
 
         failedComponent = (n,d) ->
@@ -1261,22 +1261,27 @@ describe 'Thenable', ->
           #   d
 
           .then 'variation', (c, d) ->
-            c.branch 'two', (b, data) ->
-              data * 2
-            c.branch 'three', (b, data) ->
-              data * 3
+            c.branch 'four', (b, data) ->
+              data * 4
+            c.branch 'five', (b, data) ->
+              data * 5
 
            .all [component]
            .then (n,results) ->
              results[0]
         Root()
-        .deliver 5
+        .deliver 1
         .contest "contest-multiply", [
           multiply
         ], (c, results) ->
+          #console.log "results.length", results
+          #chai.expect(results[0].value).to.eql 8
+          #chai.expect(results[1].value).to.eql 10
+          #chai.expect(results[2].value).to.eql 12
+          #chai.expect(results[3].value).to.eql 15
           results[0]
         .finally (c, res) ->
-          chai.expect(res).to.eql [20]
+          chai.expect(res).to.eql [8]
           done()
 
 
