@@ -1228,7 +1228,7 @@ describe 'Thenable', ->
           chai.expect(res).to.eql [15]
           done()
 
-    describe 'contest via subbranching w/ abortions & branch order', ->
+    describe 'contest via 1 level multi-branch w/ abortions & branch order', ->
       it 'should resolve', (done) ->
 
         failedComponent = (n,d) ->
@@ -1256,9 +1256,9 @@ describe 'Thenable', ->
             c.branch 'three', (b, data) ->
               data * 3
 
-          # .maybe failedComponent
-          # .else (c,d) ->
-          #   d
+          .maybe failedComponent
+          .else (c,d) ->
+            d
 
           .then 'variation', (c, d) ->
             c.branch 'four', (b, data) ->
@@ -1282,6 +1282,81 @@ describe 'Thenable', ->
           results[0]
         .finally (c, res) ->
           chai.expect(res).to.eql [8]
+          done()
+
+
+    describe 'contest via sub-branch w/ abortions & branch order', ->
+      it 'should resolve', (done) ->
+
+        failedComponent = (n,d) ->
+          n.continue 'failedComponent'
+          .deliver()
+          .then (n) ->
+            n.abort('failedComponent aborted')
+
+        component = (n,d) ->
+          n.continue 'component'
+          .deliver d
+          .then failedComponent
+          .else (c,d) ->
+            d
+          .then (c, d) ->
+            d
+
+        section = (c, data) ->
+          c.tree 'multiply'
+          .deliver data
+
+          .then 'continue-branching', (c, d) ->
+            c.continue()
+            .deliver(d)
+            .then 'whatever variation', (c, d) ->
+              c.branch 'zero', (b, data) ->
+                data + '-zero'
+              c.branch 'one', (b, data) ->
+                data + '-one'
+
+          .then 'choice-branching', (c, d) ->
+            c.branch 'two', (b, data) ->
+              data + '-two'
+            c.branch 'three', (b, data) ->
+              data + '-three'
+
+          .then 'tree-branching', (c, d) ->
+            c.tree()
+            .deliver(d)
+            .then 'variation', (c, d) ->
+              c.branch 'four', (b, data) ->
+                data + '-four'
+              c.branch 'five', (b, data) ->
+                data + '-five'
+            .then 'subtree-branching', (c, d) ->
+              c.tree()
+              .deliver(d)
+              .then 'variation', (c, d) ->
+                c.branch 'six', (b, data) ->
+                  data + '-six'
+                c.branch 'seven', (b, data) ->
+                  data + '-seven'
+
+          #
+          # @bergie, uncommenting this & commennting out 'subtree-branching' makes this spec pass???
+          #
+          #.maybe failedComponent
+          #.else (c,d) ->
+          #  d
+
+           .all [component]
+           .then (n,results) ->
+             results[0]
+        Root()
+        .deliver "start"
+        .contest "contest-multiply", [
+          section
+        ], (c, results) ->
+          results[0]
+        .finally (c, res) ->
+          chai.expect(res).to.eql ['start-zero-two-four-six']
           done()
 
 
@@ -1653,13 +1728,16 @@ describe 'Thenable', ->
           .all components
           .else (n,d) ->
             n.abort('post: missing required component',d)
+          .then (n,d) ->
+            n.branch 'post-style-1', ->
+              'post-style-1'
+            n.branch 'post-style-2', ->
+              'post-style-2'
 
       section = (name,posts) ->
         return (n,d) ->
-          n.tree 'section'
+          n.tree name
           .deliver()
-          .then name, ->
-            true
           .then (c, d) ->
             c.branch 'left', ->
               d
@@ -1671,22 +1749,19 @@ describe 'Thenable', ->
             c.branch 'bottom', ->
               d
           .all posts
-          .then (n,results) ->
-            name
           .else (n,d) ->
             n.abort('section: posts failed',d)
+          .then (n,results) ->
+            return {
+              pathString:n.namedPath().join('-')
+              postResults:results
+            }
 
-      imageSection = section('imageSection',[
-          post([image])
-        ])
+      imageSection = section('imageSection',[post([image])])
 
-      textSection = section('textSection',[
-          post([text])
-        ])
+      textSection = section('textSection',[post([text])])
 
-      videoTextSection = section('videoTextSection',[
-          post([video,text])
-        ])
+      videoTextSection = section('videoTextSection',[post([video,text])])
 
       sections = [videoTextSection, imageSection, textSection]
 
@@ -1721,8 +1796,18 @@ describe 'Thenable', ->
         ]
       .then layout
       .finally (n, results) ->
+        console.log results
         chai.expect(results.length).to.equal 3
-        chai.expect(results).to.eql ['videoTextSection','textSection','imageSection']
+        pathStrings = results.map (r) ->
+          r.pathString
+        chai.expect(pathStrings).to.eql ['videoTextSection-left-top','textSection-left-top','imageSection-left-top']
+        postResults = results.map (r) ->
+          r.postResults
+        chai.expect(postResults).to.eql [
+          ['post-style-1']
+          ['post-style-1']
+          ['post-style-1']
+        ]
         done()
 
     it 'should work', (done) ->
