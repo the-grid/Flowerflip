@@ -1246,14 +1246,14 @@ describe 'Thenable', ->
           .then (c, d) ->
             d
 
-        multiply = (multiplier, c, data) ->
-          c.tree 'a'
+        multiply = (c, data) ->
+          c.tree 'multiply'
           .deliver data
 
-          .then "#{multiplier}", (c, d) ->
-            c.branch 'doubled', (b, data) ->
-              data * 6
-            c.branch 'tripled', (b, data) ->
+          .then (c, d) ->
+            c.branch 'two', (b, data) ->
+              data * 2
+            c.branch 'three', (b, data) ->
               data * 3
 
           # .maybe failedComponent
@@ -1261,9 +1261,9 @@ describe 'Thenable', ->
           #   d
 
           .then 'variation', (c, d) ->
-            c.branch 'top', (b, data) ->
-              data * 3
-            c.branch 'bottom', (b, data) ->
+            c.branch 'two', (b, data) ->
+              data * 2
+            c.branch 'three', (b, data) ->
               data * 3
 
            .all [component]
@@ -1272,11 +1272,11 @@ describe 'Thenable', ->
         Root()
         .deliver 5
         .contest "contest-multiply", [
-          multiply.bind @, 2
+          multiply
         ], (c, results) ->
           results[0]
-        .finally 'enfin-fini',   (c, res) ->
-          chai.expect(res).to.eql [45]
+        .finally (c, res) ->
+          chai.expect(res).to.eql [20]
           done()
 
 
