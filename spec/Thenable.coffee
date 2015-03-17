@@ -1210,10 +1210,10 @@ describe 'Thenable', ->
 
     describe 'contest via branching', ->
       it 'should resolve', (done) ->
-        multiply = (multiplier, c, data) ->
+        multiply = (c, data) ->
           c.tree 'a'
           .deliver data
-          .then "#{multiplier}", (c, d) ->
+          .then (c, d) ->
             c.branch 'doubled', (b, data) ->
               data * 4
             c.branch 'tripled', (b, data) ->
@@ -1221,12 +1221,10 @@ describe 'Thenable', ->
         Root()
         .deliver 5
         .contest "contest-multiply", [
-          multiply.bind @, 2
+          multiply
         ], (c, results) ->
-          paths = results.map (r) -> r.path
-          idx = paths.indexOf 'root-tripled-then'
-          results[idx]
-        .finally 'enfin-fini',   (c, res) ->
+          results[1]
+        .then 'enfin-fini',   (c, res) ->
           chai.expect(res).to.eql [15]
           done()
 
