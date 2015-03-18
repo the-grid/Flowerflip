@@ -1282,9 +1282,9 @@ describe 'Thenable', ->
 
         failedComponent = (n,d) ->
           n.continue 'failedComponent'
-          .deliver()
-          .then (n) ->
-            n.abort('failedComponent aborted')
+          .deliver d
+          .then (n, val) ->
+            n.abort('failedComponent aborted', val)
 
         component = (n,d) ->
           n.continue 'component'
