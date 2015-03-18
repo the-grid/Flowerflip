@@ -23,12 +23,12 @@ class Thenable
           if state.countRejected() > 0
             state.finished = true
             rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
-            composite.reject rejects[0]?[0] or rejects[0]
+            composite.reject rejects[0][0] or rejects[0]
             return
           if state.countAborted() > 0
             state.finished = true
             rejects = state.getAborted()
-            composite.reject rejects[rejects.length - 1]
+            composite.reject rejects[0][0] or rejects[0]
             return
           return unless state.isComplete()
           Collection.deliverBranches state, choice, subChoice, composite

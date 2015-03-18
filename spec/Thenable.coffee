@@ -585,7 +585,6 @@ describe 'Thenable', ->
 
 
     describe 'with all & return values', ->
-
       y1 = (c, data) ->
         c.tree()
         .deliver data
