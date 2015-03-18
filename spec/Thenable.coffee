@@ -1230,9 +1230,9 @@ describe 'Thenable', ->
 
         failedComponent = (n,d) ->
           n.continue 'failedComponent'
-          .deliver()
-          .then (n) ->
-            n.abort('failedComponent aborted')
+          .deliver d
+          .then (n, val) ->
+            n.abort('failedComponent aborted', val)
 
         component = (n,d) ->
           n.continue 'component'
@@ -1263,19 +1263,14 @@ describe 'Thenable', ->
             c.branch 'five', (b, data) ->
               data * 5
 
-           .all [component]
-           .then (n,results) ->
+          .all [component]
+          .then (n,results) ->
              results[0]
         Root()
         .deliver 1
         .contest "contest-multiply", [
           multiply
         ], (c, results) ->
-          #console.log "results.length", results
-          #chai.expect(results[0].value).to.eql 8
-          #chai.expect(results[1].value).to.eql 10
-          #chai.expect(results[2].value).to.eql 12
-          #chai.expect(results[3].value).to.eql 15
           results[0]
         .finally (c, res) ->
           chai.expect(res).to.eql [8]
