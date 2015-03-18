@@ -23,11 +23,12 @@ class Thenable
           if state.countRejected() > 0
             state.finished = true
             rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
-            composite.reject rejects[0][0] or rejects[0]
+            composite.reject rejects[0]?[0] or rejects[0]
             return
           if state.countAborted() > 0
             state.finished = true
-            composite.reject state.aborted[state.aborted.length - 1].value
+            rejects = state.getAborted()
+            composite.reject rejects[rejects.length - 1]
             return
           return unless state.isComplete()
           Collection.deliverBranches state, choice, subChoice, composite
@@ -57,8 +58,8 @@ class Thenable
             return
           rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
           unless rejects.length
-            rejects = state.aborted.map (a) -> a.value
-          composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
+            rejects = state.getAborted()
+          composite.reject rejects[rejects.length - 1]?[0] or rejects[rejects.length - 1]
           return
         return
       subtree.deliver data
@@ -111,7 +112,7 @@ class Thenable
           return unless state.isComplete()
           rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
           unless rejects.length
-            rejects = state.aborted.map (a) -> a.value
+            rejects = state.getAborted()
           composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
         return
       subtree.deliver data
@@ -147,7 +148,7 @@ class Thenable
           if state.countFulfilled() is 0
             rejects = state.getRejected()
             unless rejects.length
-              rejects = state.aborted
+              rejects = state.getAborted()
             composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
             return
 

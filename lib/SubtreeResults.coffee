@@ -1,11 +1,14 @@
 class SubtreeResults
   constructor: (@tasks, @choice) ->
+    @tasks = 1 unless @tasks
     @finished = false
     @branches = []
     @aborted = []
     @fulfilled = []
     @rejected = []
 
+  countTasks: ->
+    @tasks
   countFulfilled: ->
     full = 0
     for f in @fulfilled
@@ -19,8 +22,13 @@ class SubtreeResults
       rej += Object.keys(r).length
     rej
   countAborted: ->
-    aborted = @aborted.filter (a) -> not a.branched
-    aborted.length
+    aborted = 0
+    for a in @aborted
+      continue unless a
+      for k,v of a
+        continue if v.branched
+        aborted++
+    aborted
   isComplete: ->
     todo = @tasks + @branches.length - @aborted.length
     done = @countFulfilled() + @countRejected()
@@ -29,6 +37,15 @@ class SubtreeResults
 
   getFulfilled: -> @getResults @fulfilled
   getRejected: -> @getResults @rejected
+  getAborted: ->
+    collection = @aborted
+    collection.map (f, i) ->
+      return unless f
+      keys = Object.keys f
+      keys = keys.filter (k) -> collection[i][k].branched isnt true
+      if keys.length is 1
+        return collection[i][keys[0]].value
+      keys.map (k) -> collection[i][k].value
   getResults: (collection) ->
     collection.map (f, i) ->
       return unless f
@@ -37,10 +54,11 @@ class SubtreeResults
         return collection[i][keys[0]].value
       keys.map (k) -> collection[i][k].value
 
-  getBranches: ->
-    return [] unless @fulfilled.length
+  getBranches: (collection = null) ->
+    collection = @fulfilled unless collection
+    return [] unless collection.length
     fulfilled = []
-    for r, t in @fulfilled
+    for r, t in collection
       unless typeof r is 'object'
         fulfilled[t] = [undefined]
         continue
@@ -68,14 +86,19 @@ class SubtreeResults
       value: value
     callback @, value
 
-  registerTree: (task, tree, onResult) ->
+  registerTree: (idx, tree, onResult) ->
     tree.aborted (a) =>
-      @aborted.push a
+      return if a.branched
+      path = if a.choice then a.choice.toString() else ''
+      @aborted[idx] = {} unless @aborted[idx]
+      @aborted[idx][path] = a
       return unless @isComplete()
       # Every task aborted
-      onResult @, @aborted[@aborted.length-1].value
+      onResult @, a.value
     tree.branched (c) =>
-      @branches.push c
+      path = if c.choice then c.toString() else ''
+      @branches[idx] = {} unless @branches[idx]
+      @branches[idx][path] = c
 
   toJSON: ->
     state =

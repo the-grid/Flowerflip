@@ -19,6 +19,7 @@ trees = 0
 
 Thenable = require './Thenable'
 {State, stateToString, isActive} = require './state'
+SubtreeResults = require './SubtreeResults'
 chai = require 'chai'
 debug = require 'debug'
 log =
@@ -62,13 +63,14 @@ class BehaviorTree
     @branchedCallbacks.push callback
     return
 
-  onAbort: (choice, reason, value, branched) =>
+  onAbort: (choice, reason, value, branched = false) =>
     log.tree "#{@name or @id} Non-collection #{choice} aborted with reason '%s'", reason
+    value = new Error reason unless value
     aborted =
       choice: choice
       reason: reason
       value: value
-      branched: true
+      branched: branched
     @abortedChoices.push aborted
     c aborted for c in @abortedCallbacks
 
@@ -116,8 +118,9 @@ class BehaviorTree
     orig.abort "Branched off to #{branch}", null, true
 
     # Trigger re-resolve to cause the new branch to be run
+    sourcePath = orig.source.source?.toString()
     sourcePath = '' if originalNode.promiseSource is 'root'
-    @resolve originalNode.promiseSource, sourcePath
+    @resolve orig.source.id, sourcePath
 
   createId: (name, seq = 0) ->
     id = name.replace /-/g, '_'
@@ -199,6 +202,7 @@ class BehaviorTree
       choice.onBranch = @onBranch
       choice.onSubtree = @onSubtree
       choice.onAbort = @onAbort
+      choice.continuation = sourceChoice.continuation
       node.choices[sourcePath] = choice
     choice = node.choices[sourcePath]
     localPath = node.choices[sourcePath].toString()
@@ -209,30 +213,46 @@ class BehaviorTree
     try
       val = node.callback choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
+        onResult = (state, value) =>
+          return unless state.isComplete()
+          if state.countFulfilled() is 1
+            f = state.getBranches()[0][0]
+            log.values "#{@name or @id} #{choice} resulted via subtree in #{typeof f.value} %s", f.value
+            choice.registerSubleaf f.choice, true, true
+            choice.set 'data', f.value if isActive choice
+            choice.state = State.FULFILLED if isActive choice
+            @resolve node.id, sourcePath
+            return
+          if state.countFulfilled() > 1
+            f = state.getBranches()[0]
+            f.forEach (f, i) ->
+              choice.branch "#{choice.id}_#{i}", (bnode) ->
+                log.values "#{@name or @id} #{choice} resulted via subtree in #{typeof f.value} %s", f.value
+                bnode.registerSubleaf f.choice, true, true
+                f.value
+            return
+          if state.countRejected()
+            [rejected] = state.getBranches state.rejected
+            for f in rejected
+              choice.registerSubleaf f.choice, false
+            choice.set 'data', rejected[0].value if isActive choice
+            choice.state = State.REJECTED if isActive choice
+            @resolve node.id, sourcePath
+            return
+          aborted = state.getAborted()
+          choice.set 'data', aborted[aborted.length - 1] if isActive choice
+          choice.state = State.REJECTED if isActive choice
+          @resolve node.id, sourcePath
+
+        state = new SubtreeResults 1, choice
+        state.registerTree 0, val.tree, onResult
         # Thenable returned, make subtree
-        val.then (c, r) =>
-          log.values "#{@name or @id} #{choice} sub-promise #{c} resulted in %s", r
-          choice.set 'data', r if isActive choice
-          choice.state = State.FULFILLED if isActive choice
-          c.continuation = val.tree.getRootChoice().continuation
-          choice.registerSubleaf c, true
-          @resolve node.id, sourcePath
-        val.else (c, e) =>
-          log.errors "#{@name or @id} #{c} resulted in %s", e.message
-          choice.set 'data', e if isActive choice
-          choice.state = State.REJECTED if isActive choice
-          c.continuation = val.tree.getRootChoice().continuation
-          choice.registerSubleaf c, false
-          @resolve node.id, sourcePath
-
-        if val.tree.abortedChoices.length and choice.state is State.RUNNING
-          abort = val.tree.abortedChoices[0]
-          log.errors "#{@name or @id} #{choice} has an aborted subtree, reason: #{abort.reason}"
-          choice.set 'data', abort.value if isActive choice
-          choice.state = State.REJECTED if isActive choice
-          choice.registerSubleaf abort.choice, false
-          @resolve node.id, sourcePath
-
+        val.then (c, r) ->
+          state.handleResult state.fulfilled, 0, c, r, onResult
+          return
+        val.else (c, e) ->
+          state.handleResult state.rejected, 0, c, e, onResult
+          return
         return
       # Straight-up value returned
       log.values "#{@name or @id} #{choice} resulted directly in #{typeof val} %s", val

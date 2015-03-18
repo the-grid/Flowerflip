@@ -28,14 +28,12 @@ exports.run = (tasks, composite, choice, data, onResult) ->
         state.registerTree i, val.tree, onResult
         val.then (p, d) ->
           log.values "#{choice} task #{i} #{p} resulted in #{typeof d} %s", d
-          p.continuation = val.tree.getRootChoice().continuation
           choice.registerTentativeSubleaf p
           state.handleResult state.fulfilled, i, p, d, onResult
           return
         val.else (p, e) ->
           log.errors "#{choice} task #{i} #{p} resulted in %s", e.message
           return if state.finished
-          p.continuation = val.tree.getRootChoice().continuation
           state.handleResult state.rejected, i, p, e, onResult
           return
         return
@@ -59,7 +57,6 @@ exports.deliverBranches = (state, originalChoice, choice, composite) ->
     originalChoice.registerSubleaf choice, true
     composite.deliver results
     return
-  originalChoice.state = State.ABORTED
   branches.forEach (b, i) ->
     choice.branch "#{choice.id}_#{i}", (bnode) ->
       results = []
