@@ -1749,10 +1749,12 @@ describe 'Thenable', ->
           .else (n,d) ->
             n.abort('section: posts failed',d)
           .then (n,results) ->
-            return {
-              pathString:n.namedPath().join('-')
-              postResults:results
-            }
+            results.forEach (r, i) ->
+              n.branch "post_#{i}", (b) ->
+                return {
+                  pathString: b.namedPath().join('-')
+                  postResults: [r]
+                }
 
       imageSection = section('imageSection',[post([image])])
 
