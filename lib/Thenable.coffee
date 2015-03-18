@@ -144,38 +144,39 @@ class Thenable
       subCallback = (subChoice, data) ->
         onResult = (state, latest) ->
           return unless state.isComplete()
-          if state.countFulfilled() > 0
-            fulfills = []
-            for f, i in state.fulfilled
-              continue unless f
-              for path, option of f
-                fulfills.push
-                  path: path
-                  choice: option.choice
-                  value: option.value
-            chosen = score subChoice, fulfills, chosenSolutions
-            unless chosen.choice
-              subChoice.error "Chosen solution doesn't contain a choice node"
-              return
-            subChoice.registerSubleaf chosen.choice, true, true
-            for f in fulfills
-              continue unless f.choice
-              subChoice.registerSubleaf f.choice, false
-            chosenSolutions.push chosen
-
-            accepted = resolve subChoice, chosenSolutions
-            unless accepted
-              tree.insertNodeAfter choice.id, name, 'contest', callback
-              choice.registerSubleaf subChoice, true, true
-              composite.deliver data
-              return
-            state.finished = true
-            composite.deliver chosenSolutions.map (c) -> c.value
+          if state.countFulfilled() is 0
+            rejects = state.getRejected()
+            unless rejects.length
+              rejects = state.aborted
+            composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
             return
-          rejects = state.getRejected()
-          unless rejects.length
-            rejects = state.aborted
-          composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
+
+          fulfills = []
+          for f, i in state.fulfilled
+            continue unless f
+            for path, option of f
+              fulfills.push
+                path: path
+                choice: option.choice
+                value: option.value
+          chosen = score subChoice, fulfills, chosenSolutions
+          unless chosen.choice
+            subChoice.error "Chosen solution doesn't contain a choice node"
+            return
+          subChoice.registerSubleaf chosen.choice, true, true
+          for f in fulfills
+            continue unless f.choice
+            subChoice.registerSubleaf f.choice, false
+          chosenSolutions.push chosen
+
+          accepted = resolve subChoice, chosenSolutions
+          unless accepted
+            tree.insertNodeAfter choice.id, name, 'contest', callback
+            choice.registerSubleaf subChoice, true, true
+            composite.deliver data
+            return
+          state.finished = true
+          composite.deliver chosenSolutions.map (c) -> c.value
           return
         Collection.run tasks, composite, subChoice, data, onResult
       composite = subtree.then subCallback

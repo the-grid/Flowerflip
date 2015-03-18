@@ -68,10 +68,13 @@ class SubtreeResults
       value: value
     callback @, value
 
-  registerTree: (task, tree) ->
-    tree.aborted (a) ->
+  registerTree: (task, tree, onResult) ->
+    tree.aborted (a) =>
       @aborted.push a
-    tree.branched (c) ->
+      return unless @isComplete()
+      # Every task aborted
+      onResult @, @aborted[@aborted.length-1].value
+    tree.branched (c) =>
       @branches.push c
 
   toJSON: ->

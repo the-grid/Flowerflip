@@ -25,7 +25,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
     try
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
-        state.registerTree i, val.tree
+        state.registerTree i, val.tree, onResult
         val.then (p, d) ->
           log.values "#{choice} task #{i} #{p} resulted in #{typeof d} %s", d
           p.continuation = val.tree.getRootChoice().continuation
