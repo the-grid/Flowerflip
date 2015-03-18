@@ -42,35 +42,35 @@ class BehaviorTree
         branches: []
     @parentOnBranch = null
     @directOnAbort = false
-    @aborted = []
+    @abortedChoices = []
+    @abortedCallbacks = []
+    @startedChoices = []
+    @startedCallbacks = []
+
+  started: (callback) ->
+    callback c for c in @startedChoices
+    @startedCallbacks.push callback
+    return
+
+  aborted: (callback) ->
+    callback c for c in @abortedChoices
+    @abortedCallbacks.push callback
+    return
+
+  onAbort: (choice, reason, value, branched) =>
+    log.tree "#{@name or @id} Non-collection #{choice} aborted with reason '%s'", reason
+    aborted =
+      choice: choice
+      reason: reason
+      value: value
+      branched: true
+    @abortedChoices.push aborted
+    c aborted for c in @abortedCallbacks
 
   onSubtree: (choice, name, continuation, callback) =>
     tree = new BehaviorTree name, @options
     tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
     log.tree "#{@name or @id} new #{if continuation then 'continuation' else 'subtree'} #{tree.name or tree.id} from #{choice}"
-
-    onAbort = choice.onAbort or @onAbort
-    if not onAbort or @directOnAbort
-      onAbort = (rChoice, reason, value, branched) =>
-        return if branched
-        log.tree "#{@name or @id} Non-collection #{rChoice} aborted with %s", reason
-        tree.aborted.push
-          choice: rChoice
-          reason: reason
-          value: value
-      tree.directOnAbort = true
-    else
-      origOnAbort = onAbort
-      onAbort = (rChoice, reason, value, branched) ->
-        unless branched
-          tree.aborted.push
-            choice: rChoice
-            reason: reason
-            value: value
-        origOnAbort rChoice, reason, value, branched
-      tree.directOnAbort = true
-
-    tree.onAbort = onAbort
     t = new Thenable tree
     choice.subtrees = [] unless choice.subtrees
     choice.subtrees.push tree
@@ -105,6 +105,11 @@ class BehaviorTree
     @nodes[id].destinations = originalNode.destinations.slice 0
     originalNode.branches = [] unless originalNode.branches
     originalNode.branches.push @nodes[id]
+
+    # Let parent know of new branch
+    @startedChoices.push branch
+    c branch for c in @startedCallbacks
+    orig.abort "Branched off to #{branch}", null, true
 
     # Trigger re-resolve to cause the new branch to be run
     sourcePath = '' if originalNode.promiseSource is 'root'
@@ -219,8 +224,8 @@ class BehaviorTree
           choice.registerSubleaf c, false
           @resolve node.id, sourcePath
 
-        if val.tree.directOnAbort and val.tree.aborted.length and choice.state is State.RUNNING
-          abort = val.tree.aborted[0]
+        if val.tree.directOnAbort and val.tree.abortedChoices.length and choice.state is State.RUNNING
+          abort = val.tree.abortedChoices[0]
           log.errors "#{@name or @id} #{choice} has an aborted subtree, reason: #{abort.reason}"
           choice.set 'data', abort.value if isActive choice
           choice.state = State.REJECTED if isActive choice
@@ -283,6 +288,8 @@ class BehaviorTree
     choice.set 'data', data if isActive choice
     choice.state = state
     node.choices[''] = choice
+    @startedChoices.push choice
+    c choice for c in @startedCallbacks
     @resolve node.id, ''
 
   findDestinations: (node, choice) ->

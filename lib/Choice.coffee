@@ -116,6 +116,7 @@ class Choice
 
   # Used for aborting the execution of the current tree path
   abort: (reason, value, onBranch = false) ->
+    return if @state is State.ABORTED
     @set 'aborted', reason
     @state = State.ABORTED
     return unless @onAbort

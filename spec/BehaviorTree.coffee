@@ -1,5 +1,7 @@
 chai = require 'chai' unless chai
 BehaviorTree = require '../lib/BehaviorTree'
+{State} = require '../lib/state'
+Choice = require '../lib/Choice'
 
 describe 'Behavior Tree API', ->
   describe 'creating IDs', ->
@@ -47,3 +49,44 @@ describe 'Behavior Tree API', ->
       chai.expect(tree.nodes.bar.destinations[0].name).to.equal 'baz'
       chai.expect(tree.nodes.baz.destinations.length).to.equal 0
       chai.expect(tree.nodes.baz.sources.length).to.equal 2
+
+  describe 'handling events', ->
+    it 'should call started when subscribed before root is delivered', (done) ->
+      tree = new BehaviorTree null,
+        Choice: Choice
+      tree.started (c) ->
+        chai.expect(c.get('data')).to.equal true
+        done()
+      tree.execute true
+    it 'should call started when subscribed after root is delivered', (done) ->
+      tree = new BehaviorTree null,
+        Choice: Choice
+      tree.execute true
+      tree.started (c) ->
+        chai.expect(c.get('data')).to.equal true
+        done()
+    it 'should call started when subscribed before choice is branched', (done) ->
+      started = 0
+      tree = new BehaviorTree null,
+        Choice: Choice
+      tree.registerNode 'root', 'then', 'then', (c, d) ->
+        c.branch 'foo', ->
+          chai.expect(started).to.equal 2
+          done()
+          d
+      tree.started (c) ->
+        started++
+      tree.execute true
+    it 'should call aborted when subscribed before choice is branched', (done) ->
+      started = 0
+      tree = new BehaviorTree null,
+        Choice: Choice
+      tree.registerNode 'root', 'then', 'then', (c, d) ->
+        c.branch 'foo', ->
+          chai.expect(started).to.equal 2
+          done()
+          d
+      tree.aborted (c) ->
+        chai.expect(c.choice.name).to.equal 'then'
+        done()
+      tree.execute true
