@@ -38,6 +38,8 @@ class Choice
       globalsSet: []
       paths: []
 
+    @continuation = false
+
   namedPath: (includeSelf = false) ->
     path = if @source then @source.namedPath() else []
     if @state is State.FULFILLED or includeSelf
@@ -88,6 +90,7 @@ class Choice
     id = name.replace /-/g, '_' if name
     id = "#{@id}_b#{@branches}" unless name
     branch = @createChoice @source, id, name
+    branch.continuation = @continuation
     branch.state = State.PENDING
     branch.onBranch = @onBranch
     branch.onSubtree = @onSubtree
@@ -257,7 +260,9 @@ class Choice
 
   createChoice: (source, id, name) ->
     # Override in subclasses
-    new Choice source, id, name
+    c = new Choice source, id, name
+    c.continuation = @continuation
+    c
 
   toJSON: ->
     base =
