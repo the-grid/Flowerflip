@@ -186,8 +186,3 @@ describe 'Subtrees', ->
       testChild child,
         child:'yep 5'
         state:'w-child'
-
-
-
-
-
