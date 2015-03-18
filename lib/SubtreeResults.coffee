@@ -21,18 +21,28 @@ class SubtreeResults
       continue unless r
       rej += Object.keys(r).length
     rej
-  countAborted: ->
+  countAborted: (branched = false) ->
     aborted = 0
     for a in @aborted
       continue unless a
       for k,v of a
-        continue if v.branched
+        continue unless v.branched is branched
         aborted++
     aborted
   isComplete: ->
-    todo = @tasks + @branches.length - @aborted.length
-    done = @countFulfilled() + @countRejected()
-    @finished = done >= todo
+    return @finished if @finished
+    i = 0
+    complete = true
+    while i < @tasks
+      fulfilled = if @fulfilled[i] then Object.keys(@fulfilled[i]).length else 0
+      rejected = if @rejected[i] then Object.keys(@rejected[i]).length else 0
+      branched = if @branches[i] then Object.keys(@branches[i]).length else 0
+      aborted = if @aborted[i] then Object.keys(@aborted[i]).length else 0
+      #console.log "#{@choice.treeId} #{@choice} #{i} #{fulfilled} #{rejected} #{aborted} #{branched}"
+      if fulfilled + rejected + aborted < branched + 1
+        complete = false
+      i++
+    @finished = complete
     return @finished
 
   getFulfilled: -> @getResults @fulfilled
@@ -87,18 +97,17 @@ class SubtreeResults
     callback @, value
 
   registerTree: (idx, tree, onResult) ->
+    tree.branched (c) =>
+      path = if c then c.toString() else ''
+      @branches[idx] = {} unless @branches[idx]
+      @branches[idx][path] = c
     tree.aborted (a) =>
-      return if a.branched
       path = if a.choice then a.choice.toString() else ''
       @aborted[idx] = {} unless @aborted[idx]
       @aborted[idx][path] = a
       return unless @isComplete()
       # Every task aborted
       onResult @, a.value
-    tree.branched (c) =>
-      path = if c.choice then c.toString() else ''
-      @branches[idx] = {} unless @branches[idx]
-      @branches[idx][path] = c
 
   toJSON: ->
     state =
