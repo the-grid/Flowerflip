@@ -40,12 +40,12 @@ class BehaviorTree
         sources: []
         destinations: []
         branches: []
-    @parentOnBranch = null
-    @directOnAbort = false
     @abortedChoices = []
     @abortedCallbacks = []
     @startedChoices = []
     @startedCallbacks = []
+    @branchedChoices = []
+    @branchedCallbacks = []
 
   started: (callback) ->
     callback c for c in @startedChoices
@@ -55,6 +55,11 @@ class BehaviorTree
   aborted: (callback) ->
     callback c for c in @abortedChoices
     @abortedCallbacks.push callback
+    return
+
+  branched: (callback) ->
+    callback c for c in @branchedChoices
+    @branchedCallbacks.push callback
     return
 
   onAbort: (choice, reason, value, branched) =>
@@ -69,7 +74,6 @@ class BehaviorTree
 
   onSubtree: (choice, name, continuation, callback) =>
     tree = new BehaviorTree name, @options
-    tree.parentOnBranch = choice.parentOnBranch or @parentOnBranch
     log.tree "#{@name or @id} new #{if continuation then 'continuation' else 'subtree'} #{tree.name or tree.id} from #{choice}"
     t = new Thenable tree
     choice.subtrees = [] unless choice.subtrees
@@ -81,9 +85,9 @@ class BehaviorTree
     subChoice.treeId = tree.id
     node.choices[''] = subChoice
     node.choices[''].onSubtree = tree.onSubtree
-    node.choices[''].parentSource = choice
-    node.choices[''].parentOnBranch = @parentOnBranch
     node.choices[''].onAbort = tree.onAbort
+    node.choices[''].onBranch = tree.onBranch
+    node.choices[''].parentSource = choice
     node.choices[''].continuation = continuation
 
     callback t, tree if callback
@@ -96,10 +100,8 @@ class BehaviorTree
     originalNode = @nodes[orig.id]
     unless originalNode
       throw new Error "Source node #{orig.id} not found"
-    @parentOnBranch @, orig, branch, callback if @parentOnBranch
     id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback, false
     sourcePath = if orig.source then orig.source.toString() else ''
-    destPath = branch.toString()
     branch.treeId = @id
     @nodes[id].choices[sourcePath] = branch
     @nodes[id].destinations = originalNode.destinations.slice 0
@@ -109,6 +111,8 @@ class BehaviorTree
     # Let parent know of new branch
     @startedChoices.push branch
     c branch for c in @startedCallbacks
+    @branchedChoices.push branch
+    c branch for c in @branchedCallbacks
     orig.abort "Branched off to #{branch}", null, true
 
     # Trigger re-resolve to cause the new branch to be run
@@ -194,7 +198,6 @@ class BehaviorTree
       choice.treeId = @id
       choice.onBranch = @onBranch
       choice.onSubtree = @onSubtree
-      choice.parentOnBranch = @parentOnBranch
       choice.onAbort = @onAbort
       node.choices[sourcePath] = choice
     choice = node.choices[sourcePath]
@@ -207,8 +210,6 @@ class BehaviorTree
       val = node.callback choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
         # Thenable returned, make subtree
-        choice.subtrees = [] unless choice.subtrees
-        choice.subtrees.push val.tree
         val.then (c, r) =>
           log.values "#{@name or @id} #{choice} sub-promise #{c} resulted in %s", r
           choice.set 'data', r if isActive choice
@@ -224,7 +225,7 @@ class BehaviorTree
           choice.registerSubleaf c, false
           @resolve node.id, sourcePath
 
-        if val.tree.directOnAbort and val.tree.abortedChoices.length and choice.state is State.RUNNING
+        if val.tree.abortedChoices.length and choice.state is State.RUNNING
           abort = val.tree.abortedChoices[0]
           log.errors "#{@name or @id} #{choice} has an aborted subtree, reason: #{abort.reason}"
           choice.set 'data', abort.value if isActive choice
@@ -279,7 +280,6 @@ class BehaviorTree
     choice.treeId = @id
     choice.onBranch = @onBranch
     choice.onSubtree = @onSubtree
-    choice.parentOnBranch = @parentOnBranch
     choice.onAbort = @onAbort
     choice.parentSource = @nodes['root'].parentSource
     if typeof data is 'object' and toString.call(data) isnt '[object Array]'

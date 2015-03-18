@@ -68,6 +68,12 @@ class SubtreeResults
       value: value
     callback @, value
 
+  registerTree: (task, tree) ->
+    tree.aborted (a) ->
+      @aborted.push a
+    tree.branched (c) ->
+      @branches.push c
+
   toJSON: ->
     state =
       tasks: @tasks

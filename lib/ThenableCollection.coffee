@@ -10,30 +10,6 @@ exports.run = (tasks, composite, choice, data, onResult) ->
   if typeof tasks is 'function'
     tasks = tasks choice, data
 
-  choice.parentOnBranch = (tree, orig, branch, callback) ->
-    unless orig.state is State.ABORTED
-      orig.abort "Branched off to #{branch}", null, true
-      found = state.aborted.filter (a) -> a.choice is orig
-      unless found.length
-        state.aborted.push
-          branched: true
-          choice: orig
-    state.branches.push branch
-
-  composite.tree.onAbort = (rChoice, reason, value, branched) ->
-    log.tree "#{choice} task #{rChoice} aborted with %s", reason unless branched
-    value = new Error reason unless value
-    found = state.aborted.filter (a) -> a.choice is rChoice
-    unless found.length
-      state.aborted.push
-        branched: branched
-        choice: rChoice
-        reason: reason
-        value: value
-    onResult state, value unless branched
-  composite.tree.directOnAbort = false
-  choice.onAbort = composite.tree.onAbort
-
   state = new SubtreeResults tasks.length, choice
   unless tasks.length
     state.handleResult state.rejected, 0, null, new Error("No tasks provided"), onResult
@@ -49,6 +25,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
     try
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
+        state.registerTree i, val.tree
         val.then (p, d) ->
           log.values "#{choice} task #{i} #{p} resulted in #{typeof d} %s", d
           p.continuation = val.tree.getRootChoice().continuation

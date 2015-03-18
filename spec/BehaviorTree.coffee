@@ -90,3 +90,16 @@ describe 'Behavior Tree API', ->
         chai.expect(c.choice.name).to.equal 'then'
         done()
       tree.execute true
+    it 'should call branched when subscribed before choice is branched', (done) ->
+      started = 0
+      tree = new BehaviorTree null,
+        Choice: Choice
+      tree.registerNode 'root', 'then', 'then', (c, d) ->
+        c.branch 'foo', ->
+          chai.expect(started).to.equal 2
+          done()
+          d
+      tree.branched (c) ->
+        chai.expect(c.choice.name).to.equal 'then'
+        done()
+      tree.execute true

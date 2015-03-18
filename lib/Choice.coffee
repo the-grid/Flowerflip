@@ -90,7 +90,6 @@ class Choice
     branch = @createChoice @source, id, name
     branch.state = State.PENDING
     branch.onBranch = @onBranch
-    branch.parentOnBranch = @parentOnBranch
     branch.onSubtree = @onSubtree
     branch.onAbort = @onAbort
     clone = @toJSON()
