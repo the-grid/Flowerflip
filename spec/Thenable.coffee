@@ -1140,10 +1140,8 @@ describe 'Thenable', ->
         Root()
         .deliver()
         .contest [loser, loser, loser, loser, loser]
-          , (c, results) ->
-            results[0]
         .else (c, res) ->
-          chai.expect(res.reason).to.eql 'loser'
+          chai.expect(res.message).to.eql 'loser'
           done()
 
 
@@ -1630,7 +1628,6 @@ describe 'Thenable', ->
           ])
 
         sections = [videoTextSection, imageSection, textSection]
-
         layout = (n) ->
           n.tree 'layout'
           .deliver()
@@ -1796,7 +1793,6 @@ describe 'Thenable', ->
         ]
       .then layout
       .finally (n, results) ->
-        console.log results
         chai.expect(results.length).to.equal 3
         pathStrings = results.map (r) ->
           r.pathString
