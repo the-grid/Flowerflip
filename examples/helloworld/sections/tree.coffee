@@ -1,4 +1,4 @@
-Fletcher = require 'fletcher'
+Fletcher = require('fletcher')()
 
 harmony = (f) ->
   f.rule [
