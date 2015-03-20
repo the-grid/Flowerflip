@@ -225,8 +225,8 @@ class BehaviorTree
             return
           if state.countFulfilled() > 1
             f = state.getBranches()[0]
-            f.forEach (f, i) ->
-              choice.branch "#{choice.id}_#{i}", (bnode) ->
+            f.forEach (f, i) =>
+              choice.branch "#{choice.id}_#{i}", (bnode) =>
                 log.values "#{@name or @id} #{choice} resulted via subtree in #{typeof f.value} %s", f.value
                 bnode.registerSubleaf f.choice, true, true
                 f.value
