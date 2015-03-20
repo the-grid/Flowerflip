@@ -95,14 +95,14 @@ class BehaviorTree
     callback t, tree if callback
     t
 
-  onBranch: (orig, branch, callback) =>
+  onBranch: (orig, branch, callback, silent) =>
     log.tree "#{@name or @id} Branch #{branch} from #{orig}"
     if orig.id is 'root'
       throw new Error 'Cannot branch the root node'
     originalNode = @nodes[orig.id]
     unless originalNode
       throw new Error "Source node #{orig.id} not found"
-    id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback, false
+    id = @registerNode originalNode.promiseSource, branch.name, originalNode.type, callback, false, branch.source.id
     sourcePath = if orig.source then orig.source.toString() else ''
     branch.treeId = @id
     @nodes[id].choices[sourcePath] = branch
@@ -135,7 +135,7 @@ class BehaviorTree
       seqId = "#{id}_#{seq}"
     seqId
 
-  registerNode: (source, name, type, callback, autoresolve = true) ->
+  registerNode: (source, name, type, callback, autoresolve = true, onlySource = null) ->
     unless callback
       type = name
       callback = type
@@ -160,7 +160,11 @@ class BehaviorTree
       destinations: []
       branches: []
 
-    @findSources @nodes[id], autoresolve
+    unless onlySource
+      @findSources @nodes[id], autoresolve
+    else
+      @nodes[id].sources.push @nodes[onlySource]
+      @nodes[onlySource].destinations.push @nodes[id]
 
     id
 
@@ -229,11 +233,11 @@ class BehaviorTree
             return
           if state.countFulfilled() > 1
             f = state.getBranches()[0]
-            f.forEach (f, i) =>
+            f.forEach (fulfilled, i) =>
               choice.branch "#{choice.id}_#{i}", (bnode) =>
-                log.values "#{@name or @id} #{choice} resulted via branch #{bnode} in #{typeof f.value} %s", f.value
-                bnode.registerSubleaf f.choice, true, true
-                f.value
+                log.values "#{@name or @id} #{choice} resulted via branch #{bnode} in #{typeof fulfilled.value} %s", fulfilled.value
+                bnode.registerSubleaf fulfilled.choice, true, true
+                fulfilled.value
             return
           if state.countRejected()
             [rejected] = state.getBranches state.rejected
