@@ -111,9 +111,6 @@ describe 'Solving a layout problem', ->
       layout = require '../examples/helloworld/index'
       t.deliver page
       layout t
-      .then (c, d) ->
-        chai.expect(false).to.be.ok 'then reached'
-        done()
       .else (c, d) ->
         chai.expect(d).to.be.instanceof Error
         return done()
@@ -164,9 +161,6 @@ describe 'Solving a layout problem', ->
       layout = require '../examples/helloworld/index'
       t.deliver page
       layout t
-      .then (c, d) ->
-        chai.expect(false).to.be.ok 'then reached'
-        done()
       .else (c, d) ->
         chai.expect(d).to.be.instanceof Error
         return done()
