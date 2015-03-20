@@ -18,9 +18,7 @@ module.exports = (choice, data) ->
   .else 'derived', (c, d) ->
     layout = 'simple'
     c.addPath layout
-#    choice.set 'system:layout:id', layout
     layouts[layout]
   .then (c, d) ->
     choice.set 'system:layout:sections', d
     data
-
