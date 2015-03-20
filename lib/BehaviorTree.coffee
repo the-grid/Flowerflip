@@ -213,6 +213,7 @@ class BehaviorTree
     try
       val = node.callback choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
+        log.values "#{@name or @id} #{choice} returned subtree #{val.tree.name or val.tree.id} #{val.id}"
         onResult = (state, value) =>
           return unless state.isComplete()
           if state.countFulfilled() is 1
@@ -227,7 +228,7 @@ class BehaviorTree
             f = state.getBranches()[0]
             f.forEach (f, i) =>
               choice.branch "#{choice.id}_#{i}", (bnode) =>
-                log.values "#{@name or @id} #{choice} resulted via subtree in #{typeof f.value} %s", f.value
+                log.values "#{@name or @id} #{choice} resulted via branch #{bnode} in #{typeof f.value} %s", f.value
                 bnode.registerSubleaf f.choice, true, true
                 f.value
             return
@@ -249,12 +250,14 @@ class BehaviorTree
         # Thenable returned, make subtree
         val.then (c, r) ->
           state.handleResult state.fulfilled, 0, c, r, onResult
-          return
+          return state
         val.else (c, e) ->
           state.handleResult state.rejected, 0, c, e, onResult
-          return
+          return state
         return
       # Straight-up value returned
+      return if choice.state is State.ABORTED
+      return if typeof val?.isComplete is 'function'
       log.values "#{@name or @id} #{choice} resulted directly in #{typeof val} %s", val
       choice.set 'data', val if isActive choice
       choice.state = State.FULFILLED if isActive choice
@@ -324,6 +327,15 @@ class BehaviorTree
     gotNegative = false
     gotPositive = false
 
+    handleSourceBranches = (source) =>
+      return unless source.branches and source.branches.length
+      for branch in source.branches
+        choice.sources.push branch if choice.sources.indexOf(branch) is -1
+        branch.destinations.push choice if branch.destinations.indexOf(choice) is -1
+        for path, c of branch.choices
+          @resolve branch.id, path if autoresolve
+        handleSourceBranches branch
+
     source = @nodes[choice.promiseSource]
     source = source.after while source.after
     while source
@@ -335,17 +347,11 @@ class BehaviorTree
         # Skip this one, keep looking for a positive
         source = @nodes[source.promiseSource]
         continue
-
       # Add edge between source and node
       source.destinations.push choice if source.destinations.indexOf(choice) is -1
       choice.sources.push source if choice.sources.indexOf(source) is -1
 
-      if source.branches and source.branches.length
-        for branch in source.branches
-          choice.sources.push branch if choice.sources.indexOf(branch) is -1
-          branch.destinations.push choice if branch.destinations.indexOf(choice) is -1
-          for path, c of branch.choices
-            @resolve branch.id, path if autoresolve
+      handleSourceBranches source
 
       for path, c of source.choices
         @resolve source.id, path if autoresolve
