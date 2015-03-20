@@ -1445,7 +1445,7 @@ describe 'Thenable', ->
 
         test splitter, [1,2], done
 
-      it 'v4', (done) ->
+      it.skip 'v4', (done) ->
         splitter = (choice,data) ->
           choice.tree()
           .deliver({})
