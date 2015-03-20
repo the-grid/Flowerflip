@@ -33,7 +33,7 @@ class Thenable
           return unless state.isComplete()
           Collection.deliverBranches state, choice, subChoice, composite
           return
-        return
+        return state
       subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'all', callback
@@ -52,7 +52,7 @@ class Thenable
       subtree = choice.continue name
       composite = subtree.then (subChoice, data) ->
         Collection.run tasks, composite, subChoice, data, (state, latest) ->
-          return unless state.isComplete()
+          return state unless state.isComplete()
           if state.countFulfilled() > 0
             Collection.deliverBranches state, choice, subChoice, composite
             return
@@ -61,7 +61,7 @@ class Thenable
             rejects = state.getAborted()
           composite.reject rejects[rejects.length - 1]?[0] or rejects[rejects.length - 1]
           return
-        return
+        return state
       subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'some', callback
@@ -109,12 +109,11 @@ class Thenable
             fulfills = state.getFulfilled().filter (f) -> typeof f isnt 'undefined'
             composite.deliver fulfills[0][0] or fulfills[0]
             return
-          return unless state.isComplete()
+          return state unless state.isComplete()
           rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
           unless rejects.length
             rejects = state.getAborted()
           composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
-        return
       subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'race', callback
@@ -144,7 +143,7 @@ class Thenable
       subtree = choice.continue name
       subCallback = (subChoice, data) ->
         onResult = (state, latest) ->
-          return unless state.isComplete()
+          return state unless state.isComplete()
           if state.countFulfilled() is 0
             rejects = state.getRejected()
             unless rejects.length

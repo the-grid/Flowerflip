@@ -25,6 +25,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
     try
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
+        log.values "#{choice.treeId} #{choice} returned subtree #{val.tree.name or val.tree.id} #{val.id}"
         state.registerTree i, val.tree, onResult
         val.then (p, d) ->
           log.values "#{choice} task #{i} #{p} resulted in #{typeof d} %s", d
@@ -37,11 +38,14 @@ exports.run = (tasks, composite, choice, data, onResult) ->
           state.handleResult state.rejected, i, p, e, onResult
           return
         return
+      return if choice.state is State.ABORTED
+      return if typeof val?.isComplete is 'function' and not val.isComplete()
       log.values "#{choice} task #{i} resulted directly in #{typeof val} %s", val
       state.handleResult state.fulfilled, i, null, val, onResult
     catch e
       log.errors "#{choice} task #{i} resulted in %s", e.message
       state.handleResult state.rejected, i, null, e, onResult
+  return state
 
 exports.deliverBranches = (state, originalChoice, choice, composite) ->
   branches = state.getBranches()
