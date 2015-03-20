@@ -1358,6 +1358,8 @@ describe 'Thenable', ->
           .contest [splitter]
           , (c, results) ->
             plucked = results.map (r) ->
+              if r.value instanceof Array
+                return r.value.join ''
               r.value
             results[0]
           .else (c,d) ->
@@ -1542,18 +1544,12 @@ describe 'Thenable', ->
         test splitter, [11,12,21,22], done
 
 
-      it.skip 'v8', (done) ->
+      it 'v8', (done) ->
         splitter = (choice,data) ->
           choice.tree()
           .deliver('-')
-          .then (choice,data) ->
-            # branch()
-            # .then
-            #   branch()
-            #   .then
-            #   branch()
-            #   .then
-            choice.branch "1", (b,data) ->
+          .all [
+            (b,data) ->
               b.tree()
               .deliver(data)
               .then (choice,data) ->
@@ -1561,24 +1557,15 @@ describe 'Thenable', ->
                   b.tree()
                   .deliver(data)
                   .then (choice,data) ->
-                    data += '1a-'
+                    data += '1a'
                     data
                 choice.branch "b", (b,data) ->
                   b.tree()
                   .deliver(data)
                   .then (choice,data) ->
-                    data += '1b-'
+                    data += '1b'
                     data
-            # branch()
-            #   tree()
-            #   .then()
-            #     branch()
-            #       tree()
-            #       .then()
-            #     branch()
-            #       tree()
-            #       .then()
-            choice.branch "2",  (b,data) ->
+            (b,data) ->
               b.tree()
               .deliver(data)
               .then (choice,data) ->
@@ -1594,10 +1581,11 @@ describe 'Thenable', ->
                   .then (choice,data) ->
                     data += '2b-'
                     data
+          ]
           .then (choice,data) ->
             data
 
-        test splitter, ['-1a-2a-','-1b-2a-','-1a-2b-','-1b-2b-'], done
+        test splitter, ['-1a-2a-','-1a-2b-','-1b-2a-','-1b-2b-'], done
 
 
    #d88888ba                                   88
