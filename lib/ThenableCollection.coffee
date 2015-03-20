@@ -12,6 +12,8 @@ exports.run = (tasks, composite, choice, data, onResult) ->
 
   state = new SubtreeResults tasks.length, choice
   unless tasks.length
+    state.started[0] = []
+    state.started[0][''] = true
     state.handleResult state.rejected, 0, null, new Error("No tasks provided"), onResult
     return
 
@@ -25,7 +27,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
     try
       val = t choice, data
       if val and typeof val.then is 'function' and typeof val.else is 'function'
-        log.values "#{choice.treeId} #{choice} returned subtree #{val.tree.name or val.tree.id} #{val.id}"
+        log.values "#{choice.treeId} #{choice} ##{i} returned subtree #{val.tree.name or val.tree.id} #{val.id}"
         state.registerTree i, val.tree, onResult
         val.then (p, d) ->
           log.values "#{choice} task #{i} #{p} resulted in #{typeof d} %s", d
