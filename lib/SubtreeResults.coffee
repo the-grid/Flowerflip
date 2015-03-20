@@ -8,7 +8,7 @@ class SubtreeResults
     @tasks = 1 unless @tasks
     @finished = false
     @started = []
-    @branches = []
+    @branched = []
     @aborted = []
     @fulfilled = []
     @rejected = []
@@ -44,9 +44,10 @@ class SubtreeResults
       rejected = if @rejected[i] then Object.keys(@rejected[i]).length else 0
       started = if @started[i] then Object.keys(@started[i]).length else 0
       aborted = if @aborted[i] then Object.keys(@aborted[i]).length else 0
+      branched = if @branched[i] then Object.keys(@branched[i]).length else 0
       complete = false if started is 0
 
-      log.collection "#{@choice?.treeId} #{@choice} ##{i} #{fulfilled + rejected >= started - aborted} (#{fulfilled} fulfilled + #{rejected} rejected / #{started} started - #{aborted} aborted)"
+      log.collection "#{@choice?.treeId} #{@choice} ##{i} #{fulfilled + rejected >= started - aborted} (#{fulfilled} fulfilled + #{rejected} rejected / #{started} started - #{aborted} aborted, #{branched} branched)"
       if fulfilled + rejected < started - aborted
         complete = false
       i++
@@ -108,8 +109,8 @@ class SubtreeResults
   registerTree: (idx, tree, onResult) ->
     tree.branched (c) =>
       path = if c then c.toString() else ''
-      @branches[idx] = {} unless @branches[idx]
-      @branches[idx][path] = c
+      @branched[idx] = {} unless @branched[idx]
+      @branched[idx][path] = c
     tree.started (c) =>
       path = if c then c.toString() else ''
       @started[idx] = {} unless @started[idx]
@@ -126,7 +127,8 @@ class SubtreeResults
     state =
       tasks: @tasks
       finished: @finished
-      branches: @branches.slice 0
+      branched: @branched.slice 0
+      started: @started.slice 0
       aborted: @aborted.slice 0
       fulfilled: @fulfilled.slice 0
       rejected: @rejected.slice 0
