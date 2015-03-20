@@ -1410,7 +1410,7 @@ describe 'Thenable', ->
               d
           .then (choice,data) ->
             data
-        test splitter, ['-1-11-','-2-11-','-1-22-','-2-22-'], done
+        test splitter, ['-1-11-','-1-22-','-2-11-','-2-22-'], done
 
       it 'v2', (done) ->
         splitter = (choice,data) ->
@@ -1518,7 +1518,7 @@ describe 'Thenable', ->
                 data += '-22'
                 data
 
-        test splitter, ['11-21','12-21','11-22','12-22'], done
+        test splitter, ['11-21','11-22','12-21','12-22'], done
 
 
       it 'v7 - branch.branch', (done) ->
