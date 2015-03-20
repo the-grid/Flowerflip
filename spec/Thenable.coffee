@@ -4,6 +4,8 @@ Root = require '../lib/Root'
 describe 'Thenable', ->
 
 
+
+
   #8888888ba                          88
   #8      "8b                         ""
   #8      ,8P
@@ -342,6 +344,7 @@ describe 'Thenable', ->
           chai.expect(res[0]).to.be.true
           chai.expect(c.availableItems().length).to.equal 2
           done()
+
 
 
 
@@ -1331,13 +1334,6 @@ describe 'Thenable', ->
                 c.branch 'seven', (b, data) ->
                   data + '-seven'
 
-          #
-          # @bergie, uncommenting this & commennting out 'subtree-branching' makes this spec pass???
-          #
-          #.maybe failedComponent
-          #.else (c,d) ->
-          #  d
-
            .all [component]
            .then (n,results) ->
              results[0]
@@ -1352,6 +1348,252 @@ describe 'Thenable', ->
           done()
 
 
+    describe.only 'merge nested branches w/ contest', ->
+
+      merger = (splitter) ->
+        return (choice) ->
+          plucked = null
+          choice.tree()
+          .deliver()
+          .contest [splitter]
+          , (c, results) ->
+            plucked = results.map (r) ->
+              r.value
+            results[0]
+          .else (c,d) ->
+            console.log "Splitter failed", d
+            d
+          .then ->
+            plucked
+
+      test = (splitter, expected, done) ->
+        Root()
+        .deliver({})
+        .then merger(splitter)
+        .else (choice, results) ->
+          console.log "FALIED!", results
+          results
+        .finally (choice, results) ->
+          chai.expect(results).to.eql expected
+          done()
+
+      it 'v0', (done) ->
+        splitter = (choice,data) ->
+          choice.tree()
+          .deliver()
+          .then (choice,data) ->
+            choice.branch "1", ->
+              1
+            choice.branch "2", ->
+              2
+            choice.branch "3", ->
+              3
+        test splitter, [1,2,3], done
+
+      it 'v1', (done) ->
+        splitter = (choice) ->
+          choice.tree()
+          .deliver('-')
+          .then (choice,data) ->
+            choice.branch "1", (b,d) ->
+              d += '1-'
+              d
+            choice.branch "2", (b,d) ->
+              d += '2-'
+              d
+          .then (choice,data) ->
+            choice.branch "11", (b,d) ->
+              d += '11-'
+              d
+            choice.branch "22", (b,d) ->
+              d += '22-'
+              d
+          .then (choice,data) ->
+            data
+        test splitter, ['-1-11-','-2-11-','-1-22-','-2-22-'], done
+
+      it 'v2', (done) ->
+        splitter = (choice,data) ->
+          choice.tree()
+          .deliver({})
+          .then (choice,data) ->
+            choice.branch "1", (b) ->
+              b.tree()
+              .deliver({})
+              .then (choice,data) ->
+                1
+            choice.branch "2",  (b) ->
+              b.tree()
+              .deliver({})
+              .then (choice,data) ->
+                2
+        test splitter, [1,2], done
+
+      it 'v3', (done) ->
+        splitter = (choice,data) ->
+          choice.tree()
+          .deliver({})
+          .then (choice,data) ->
+            choice.branch "0", (b) ->
+              b.tree()
+              .deliver({})
+              .then (choice,data) ->
+                choice.branch "1", (b) ->
+                  1
+                choice.branch "2",  (b) ->
+                  2
+
+        test splitter, [1,2], done
+
+      it 'v4', (done) ->
+        splitter = (choice,data) ->
+          choice.tree()
+          .deliver({})
+          .then (choice,data) ->
+            choice.branch "0"
+            .then (choice,data) ->
+              choice.branch "1", (b) ->
+                1
+              choice.branch "2",  (b) ->
+                2
+
+        test splitter, [1,2], done
+
+      it 'v5', (done) ->
+
+        splitter = (choice,data) ->
+          choice.tree()
+          .deliver('')
+          .then (choice,data) ->
+            choice.branch "1", (b,data) ->
+              data += 'a-'
+              b.tree()
+              .deliver(data)
+              .then (choice,data) ->
+                choice.branch "sub1-1", (b,data) ->
+                  data += '11-'
+                  data
+                choice.branch "sub1-2", (b,data) ->
+                  data += '12-'
+                  data
+            choice.branch "2",  (b,data) ->
+              data += '-b-'
+              b.tree()
+              .deliver(data)
+              .then (choice,data) ->
+                choice.branch "sub2-1", (b,data) ->
+                  data += '21'
+                  data
+                choice.branch "sub2-2", (b,data) ->
+                  data += '22'
+                  data
+          .then (choice,data) ->
+            data
+
+
+        test splitter, ['a-11-b-21','a-12-b-21','a-11-v-22','a-12-b-22'], done
+
+      it 'v6', (done) ->
+        splitter = (choice) ->
+          choice.tree()
+          .deliver()
+          .then (choice) ->
+            choice.tree()
+            .deliver()
+            .then (choice) ->
+              choice.branch "11", (b) ->
+                '11'
+              choice.branch "12", (b) ->
+                '12'
+          .then (choice,data) ->
+            choice.tree()
+            .deliver(data)
+            .then (choice,data) ->
+              choice.branch "21", (b,data) ->
+                data += '-21'
+                data
+              choice.branch "22", (b,data) ->
+                data += '-22'
+                data
+          .then (choice,data) ->
+            data
+
+        test splitter, ['11-21','12-21','11-22','12-22'], done
+
+
+      it 'v7 - branch.branch', (done) ->
+        splitter = (choice) ->
+          choice.tree()
+          .deliver()
+          .then (choice,data) ->
+            choice.branch "1", (b) ->
+              b.branch "sub1-1", (b) ->
+                11
+              b.branch "sub1-2", (b) ->
+                12
+            choice.branch "2",  (b) ->
+              b.branch "sub2-1", (b) ->
+                21
+              b.branch "sub2-2", (b) ->
+                22
+
+        test splitter, [11,12,21,22], done
+
+
+      it 'v8', (done) ->
+
+        splitter = (choice,data) ->
+          choice.tree()
+          .deliver('-')
+          .then (choice,data) ->
+            # branch()
+            # .then
+            #   branch()
+            #   .then
+            #   branch()
+            #   .then
+            choice.branch "1", (b,data) ->
+              data
+            .then (choice,data) ->
+              choice.branch "a", (b,data) ->
+                data
+              .then (choice,data) ->
+                data += '1a-'
+                data
+              choice.branch "b", (b,data) ->
+                data
+              .then (choice,data) ->
+                data += '1b-'
+                data
+            # branch()
+            #   tree()
+            #   .then()
+            #     branch()
+            #       tree()
+            #       .then()
+            #     branch()
+            #       tree()
+            #       .then()
+            choice.branch "2",  (b,data) ->
+              b.tree()
+              .deliver(data)
+              .then (choice,data) ->
+                choice.branch "a", (b,data) ->
+                  b.tree()
+                  .deliver(data)
+                  .then (choice,data) ->
+                    data += '2a-'
+                    data
+                choice.branch "b", (b,data) ->
+                  b.tree()
+                  .deliver(data)
+                  .then (choice,data) ->
+                    data += '2b-'
+                    data
+          .then (choice,data) ->
+            data
+
+        test splitter, ['-1a-2a-','-1b-2a-','-1a-2b-','-1b-2b-'], done
 
 
    #d88888ba                                   88
