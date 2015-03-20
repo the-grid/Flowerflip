@@ -33,7 +33,6 @@ class Thenable
           return unless state.isComplete()
           Collection.deliverBranches state, choice, subChoice, composite
           return
-        return state
       subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'all', callback
@@ -61,7 +60,6 @@ class Thenable
             rejects = state.getAborted()
           composite.reject rejects[rejects.length - 1]?[0] or rejects[rejects.length - 1]
           return
-        return state
       subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'some', callback
