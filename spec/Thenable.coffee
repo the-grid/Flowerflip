@@ -1442,6 +1442,8 @@ describe 'Thenable', ->
                   1
                 choice.branch "2",  (b) ->
                   2
+                return
+            return
 
         test splitter, [1,2], done
 
@@ -1515,8 +1517,6 @@ describe 'Thenable', ->
               choice.branch "22", (b,data) ->
                 data += '-22'
                 data
-          .then (choice,data) ->
-            data
 
         test splitter, ['11-21','12-21','11-22','12-22'], done
 
@@ -1540,7 +1540,7 @@ describe 'Thenable', ->
         test splitter, [11,12,21,22], done
 
 
-      it 'v8', (done) ->
+      it.skip 'v8', (done) ->
         splitter = (choice,data) ->
           choice.tree()
           .deliver('-')
