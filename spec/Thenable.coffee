@@ -1473,13 +1473,13 @@ describe 'Thenable', ->
               .deliver(data)
               .then (choice,data) ->
                 choice.branch "sub1-1", (b,data) ->
-                  data += '11-'
+                  data += '11'
                   data
                 choice.branch "sub1-2", (b,data) ->
-                  data += '12-'
+                  data += '12'
                   data
             choice.branch "2",  (b,data) ->
-              data += '-b-'
+              data += 'b-'
               b.tree()
               .deliver(data)
               .then (choice,data) ->
@@ -1493,7 +1493,7 @@ describe 'Thenable', ->
             data
 
 
-        test splitter, ['a-11-b-21','a-12-b-21','a-11-v-22','a-12-b-22'], done
+        test splitter, ['a-11','a-12','b-21','b-22'], done
 
       it 'v6', (done) ->
         splitter = (choice) ->
