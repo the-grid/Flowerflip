@@ -257,7 +257,7 @@ class BehaviorTree
         return
       # Straight-up value returned
       return if choice.state is State.ABORTED
-      return if typeof val?.isComplete is 'function'
+      return if typeof val?.isComplete is 'function' and not val.isComplete()
       log.values "#{@name or @id} #{choice} resulted directly in #{typeof val} %s", val
       choice.set 'data', val if isActive choice
       choice.state = State.FULFILLED if isActive choice
