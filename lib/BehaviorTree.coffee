@@ -146,6 +146,9 @@ class BehaviorTree
     unless @nodes[source]
       throw new Error "Unknown source #{source} for choice #{id}"
 
+    if @nodes[id]
+      throw new Error "Node #{id} already exists"
+
     @nodes[id] =
       id: id
       name: name
@@ -254,7 +257,7 @@ class BehaviorTree
         val.else (c, e) ->
           state.handleResult state.rejected, 0, c, e, onResult
           return state
-        return
+        return state
       # Straight-up value returned
       return if choice.state is State.ABORTED
       return if typeof val?.isComplete is 'function' and not val.isComplete()
