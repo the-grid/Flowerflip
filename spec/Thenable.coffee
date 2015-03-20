@@ -1348,7 +1348,7 @@ describe 'Thenable', ->
           done()
 
 
-    describe.only 'merge nested branches w/ contest', ->
+    describe 'merge nested branches w/ contest', ->
 
       merger = (splitter) ->
         return (choice) ->
@@ -1541,7 +1541,6 @@ describe 'Thenable', ->
 
 
       it 'v8', (done) ->
-
         splitter = (choice,data) ->
           choice.tree()
           .deliver('-')
