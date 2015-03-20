@@ -1,7 +1,13 @@
+debug = require 'debug'
+log =
+  collection: debug 'collection'
+  values: debug 'values'
+
 class SubtreeResults
   constructor: (@tasks, @choice) ->
     @tasks = 1 unless @tasks
     @finished = false
+    @started = []
     @branches = []
     @aborted = []
     @fulfilled = []
@@ -36,10 +42,12 @@ class SubtreeResults
     while i < @tasks
       fulfilled = if @fulfilled[i] then Object.keys(@fulfilled[i]).length else 0
       rejected = if @rejected[i] then Object.keys(@rejected[i]).length else 0
-      branched = if @branches[i] then Object.keys(@branches[i]).length else 0
+      started = if @started[i] then Object.keys(@started[i]).length else 0
       aborted = if @aborted[i] then Object.keys(@aborted[i]).length else 0
-      #console.log "#{@choice.treeId} #{@choice} #{i} #{fulfilled} #{rejected} #{aborted} #{branched}"
-      if fulfilled + rejected + aborted < branched + 1
+      complete = false if started is 0
+
+      log.collection "#{@choice?.treeId} #{@choice} ##{i} #{fulfilled + rejected >= started - aborted} (#{fulfilled} fulfilled + #{rejected} rejected / #{started} started - #{aborted} aborted)"
+      if fulfilled + rejected < started - aborted
         complete = false
       i++
     @finished = complete
@@ -88,6 +96,7 @@ class SubtreeResults
     return f
 
   handleResult: (collection, idx, choice, value, callback = ->) ->
+    log.values "#{@choice?.treeId} ##{idx} #{choice} resulted in #{typeof value} %s", value
     return if @finished
     path = if choice then choice.toString() else ''
     collection[idx] = {} unless collection[idx]
@@ -101,6 +110,10 @@ class SubtreeResults
       path = if c then c.toString() else ''
       @branches[idx] = {} unless @branches[idx]
       @branches[idx][path] = c
+    tree.started (c) =>
+      path = if c then c.toString() else ''
+      @started[idx] = {} unless @started[idx]
+      @started[idx][path] = c
     tree.aborted (a) =>
       path = if a.choice then a.choice.toString() else ''
       @aborted[idx] = {} unless @aborted[idx]
