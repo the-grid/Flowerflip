@@ -720,6 +720,46 @@ describe 'Thenable', ->
           done() if expected.length is 0
 
 
+  describe "some", ->
+
+    it 'should fulfill', (done) ->
+      rejecter = (choice, data) ->
+        choice.tree()
+        .deliver data
+        .then (choice, data) ->
+          n.abort()
+
+      new Root()
+      .deliver()
+      .none [rejecter]
+      .then (choice, data) ->
+        true
+      .else (choice, data) ->
+        false
+      .finally (choice, data) ->
+        chai.expect(data).to.equal [true]
+        done()
+
+    it 'should reject', (done) ->
+      fulfiller = (choice, data) ->
+        choice.tree()
+        .deliver data
+        .then (choice, data) ->
+          data
+
+      new Root()
+      .deliver()
+      .none [fulfiller]
+      .then (choice, data) ->
+        false
+      .else (choice, data) ->
+        true
+      .finally (choice, data) ->
+        chai.expect(data).to.equal [true]
+        done()
+
+
+
   #8888888ba
   #8      "8b
   #8      ,8P
