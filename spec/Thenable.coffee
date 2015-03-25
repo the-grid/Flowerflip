@@ -727,7 +727,7 @@ describe 'Thenable', ->
         choice.tree()
         .deliver data
         .then (choice, data) ->
-          n.abort()
+          choice.abort()
 
       new Root()
       .deliver()
@@ -737,7 +737,7 @@ describe 'Thenable', ->
       .else (choice, data) ->
         false
       .finally (choice, data) ->
-        chai.expect(data).to.equal [true]
+        chai.expect(data).to.equal true
         done()
 
     it 'should reject', (done) ->
@@ -748,14 +748,14 @@ describe 'Thenable', ->
           data
 
       new Root()
-      .deliver()
+      .deliver 1
       .none [fulfiller]
       .then (choice, data) ->
         false
       .else (choice, data) ->
         true
       .finally (choice, data) ->
-        chai.expect(data).to.equal [true]
+        chai.expect(data).to.equal true
         done()
 
 

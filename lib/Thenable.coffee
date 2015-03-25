@@ -41,6 +41,35 @@ class Thenable
 
     promise
 
+  none: (name, tasks) ->
+    do @checkFinal
+    if typeof name isnt 'string'
+      tasks = name
+      name = null
+
+    callback = (choice, data) ->
+      subtree = choice.continue name
+      composite = subtree.then (subChoice, data) ->
+        Collection.run tasks, composite, subChoice, data, (state, latest) ->
+          if state.countFulfilled() > 0
+            state.finished = true
+            rejects = state.getFulfilled().filter (e) -> typeof e isnt 'undefined'
+            composite.reject rejects[0][0] or rejects[0]
+            return
+          return unless state.isComplete()
+          rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
+          unless rejects.length
+            rejects = state.getAborted()
+          composite.fulfill rejects[0][0] or rejects[0]
+          return
+      subtree.deliver data
+      composite
+    id = @tree.registerNode @id, name, 'none', callback
+    promise = new Thenable @tree
+    promise.id = id
+
+    promise
+
   some: (name, tasks) ->
     do @checkFinal
     if typeof name isnt 'string'

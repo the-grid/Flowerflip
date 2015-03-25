@@ -2,6 +2,7 @@ PositiveResults = [
   'then'
   'all'
   'some'
+  'none'
   'always'
   'finally'
   'contest'
