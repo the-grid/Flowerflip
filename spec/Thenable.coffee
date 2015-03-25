@@ -720,7 +720,7 @@ describe 'Thenable', ->
           done() if expected.length is 0
 
 
-  describe "some", ->
+  describe "none", ->
 
     it 'should fulfill', (done) ->
       rejecter = (choice, data) ->
