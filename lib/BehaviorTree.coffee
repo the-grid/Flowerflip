@@ -235,6 +235,7 @@ class BehaviorTree
             f = state.getBranches()[0]
             f.forEach (fulfilled, i) =>
               choice.branch "#{choice.id}_#{i}", (bnode) =>
+                bnode.addPath choice.id
                 log.values "#{@name or @id} #{choice} resulted via branch #{bnode} in #{typeof fulfilled.value} %s", fulfilled.value
                 bnode.registerSubleaf fulfilled.choice, true, true
                 fulfilled.value
