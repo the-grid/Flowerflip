@@ -266,7 +266,7 @@ describe 'Thenable', ->
           multiply.bind @, 3
         ], (c, results) ->
           paths = results.map (r) -> r.choice.namedPath().join '-'
-          idx = paths.indexOf 'a-2-tripled-btreethen'
+          idx = paths.indexOf 'a-tripled-btreethen'
           idx = 0 if idx is -1
           results[idx]
         .finally 'end',   (c, res) ->
