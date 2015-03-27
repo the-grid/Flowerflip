@@ -30,6 +30,21 @@ describe 'Subtree Results', ->
       values = branches[0].map (b) -> b.value
       chai.expect(values).to.eql [1, 2, 3]
       done()
+    it 'should provide two for branched values with single task', (done) ->
+      r = new SubtreeResults 2
+      a = new Choice 'a'
+      b = new Choice 'b'
+      r.handleResult r.fulfilled, 0, a, 1
+      r.handleResult r.fulfilled, 0, b, 2
+      branches = r.getBranches()
+      chai.expect(branches.length).to.equal 2
+      chai.expect(branches[0].length).to.equal 1
+      values = branches[0].map (b) -> b.value
+      chai.expect(values).to.eql [1]
+      chai.expect(branches[1].length).to.equal 1
+      values = branches[1].map (b) -> b.value
+      chai.expect(values).to.eql [2]
+      done()
     it 'should provide two for branched values', (done) ->
       r = new SubtreeResults 2
       a = new Choice 'a'
