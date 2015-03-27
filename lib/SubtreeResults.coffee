@@ -91,7 +91,8 @@ class SubtreeResults
         memo.concat combinations.map (combination) -> [prefix].concat combination
       , []
 
-    return [fulfilled[0]] if fulfilled.length is 1
+    if fulfilled.length is 1
+      return fulfilled[0].map (f) -> [f]
 
     f = combine fulfilled
     return f
@@ -107,6 +108,7 @@ class SubtreeResults
     callback @, value
 
   registerTree: (idx, tree, onResult) ->
+    @tree = tree
     tree.branched (c) =>
       path = if c then c.toString() else ''
       @branched[idx] = {} unless @branched[idx]

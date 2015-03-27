@@ -70,9 +70,12 @@ exports.deliverBranches = (state, originalChoice, choice, composite) ->
         continue unless selected
         bnode.registerSubleaf selected.choice, true
         results[idx] = selected.value
+      return results
+      ###
       originalChoice.branch "#{originalChoice.id}_#{i}", (bbnode) ->
         bbnode.registerSubleaf bnode, true
         results
-      return
+      ###
+    , true
     return
   return

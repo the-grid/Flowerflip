@@ -27,6 +27,7 @@ log =
   tree: debug 'tree'
   errors: debug 'errors'
   values: debug 'values'
+  branch: debug 'branch'
 graphlib = require 'graphlib'
 dot = require 'graphlib-dot'
 
@@ -98,6 +99,7 @@ class BehaviorTree
 
   onBranch: (orig, branch, callback, silent) =>
     log.tree "#{@name or @id} Branch #{branch} from #{orig}"
+    log.branch "#{@name or @id} Branch #{branch} from #{orig}"
     if orig.id is 'root'
       throw new Error 'Cannot branch the root node'
     originalNode = @nodes[orig.id]
@@ -118,10 +120,9 @@ class BehaviorTree
     c branch for c in @branchedCallbacks
     orig.abort "Branched off to #{branch}", null, true
 
-    # Trigger re-resolve to cause the new branch to be run
     sourcePath = orig.source.source?.toString()
     sourcePath = '' if originalNode.promiseSource is 'root'
-    @resolve orig.source.id, sourcePath
+    #@resolve orig.source.id, sourcePath
 
   createId: (name, seq = 0) ->
     id = name.replace /-/g, '_'
@@ -233,13 +234,16 @@ class BehaviorTree
             @resolve node.id, sourcePath
             return
           if state.countFulfilled() > 1
-            f = state.getBranches()[0]
-            f.forEach (fulfilled, i) =>
-              choice.branch "#{choice.id}_#{i}", (bnode) =>
-                bnode.addPath choice.id
-                log.values "#{@name or @id} #{choice} resulted via branch #{bnode} in #{typeof fulfilled.value} %s", fulfilled.value
-                bnode.registerSubleaf fulfilled.choice, true, true
-                fulfilled.value
+            branches = state.getBranches()
+            branches.forEach (f, i) =>
+              f.forEach (fulfilled) =>
+                choice.branch "#{choice.id}_#{i}", (bnode) =>
+                  bnode.addPath choice.id
+                  log.values "#{@name or @id} #{choice} resulted via branch #{bnode} in #{typeof fulfilled.value} %s", fulfilled.value
+                  bnode.registerSubleaf fulfilled.choice, true, true
+                  fulfilled.value
+                , true
+            @executeBranches choice.id, "thenable subtree #{branches.length}"
             return
           if state.countRejected()
             [rejected] = state.getBranches state.rejected
@@ -265,6 +269,9 @@ class BehaviorTree
           return state
         return state
       # Straight-up value returned
+      if choice.state is State.ABORTED
+        @executeBranches node.id, 'direct'
+        return
       return if choice.state is State.ABORTED
       return if typeof val?.isComplete is 'function' and not val.isComplete()
       unless typeof val?.isComplete is 'function'
@@ -289,7 +296,7 @@ class BehaviorTree
   getRootChoice: ->
     @getRoot().choices['']
 
-  resolve: (id, sourcePath = '') ->
+  resolve: (id, sourcePath = '', fromBranch = false) ->
     node = @nodes[id]
     return unless node
     choice = node.choices[sourcePath]
@@ -379,6 +386,13 @@ class BehaviorTree
         break if gotPositive
       source = @nodes[source.promiseSource]
     choice.sources
+
+  executeBranches: (id, from) ->
+    return unless @nodes[id]
+
+    for p, c of @nodes[id].choices
+      sourcePath = c.source.source?.toString() or ''
+      @resolve c.source.id, sourcePath
 
   toGraph: () ->
     graphs = {}

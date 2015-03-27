@@ -537,7 +537,7 @@ describe 'Thenable', ->
 
     describe "eating items in branches within all", ->
 
-      test = (brancher, done) ->
+      test = (brancher, done, expected = 2) ->
         initialData =
           items: [
             { id: 1 }
@@ -547,8 +547,9 @@ describe 'Thenable', ->
         .deliver initialData
         .all [brancher]
         .finally (choice, data) ->
+          expected--
           chai.expect(choice.availableItems()).to.not.be.empty
-          done()
+          done() unless expected
 
       it 'should resolve', (done) ->
         brancher = (choice, data) ->
@@ -690,7 +691,7 @@ describe 'Thenable', ->
         shouldResolve n1, n2, n3
 
     describe 'with all & branches', ->
-      it 'should resolve with result per branch', (done) ->
+      it 'should resolve with result per branch with multiple tasks', (done) ->
         brancher = (orig, data) ->
           orig.tree 'calc'
           .deliver data
@@ -713,6 +714,30 @@ describe 'Thenable', ->
         Root()
         .deliver 5
         .all [brancher, direct]
+        .finally (c, res) ->
+          chai.expect(res).to.be.an 'array'
+          exp = expected.shift()
+          chai.expect(res).to.eql exp
+          done() if expected.length is 0
+
+      it 'should resolve with result per branch with single task', (done) ->
+        brancher = (orig, data) ->
+          orig.tree 'calc'
+          .deliver data
+          .then (choice) ->
+            choice.branch 'doubled', (c, d) ->
+              d * 2
+            choice.branch 'squared', (c, d) ->
+              d * d
+
+        expected = [
+          [10]
+          [25]
+        ]
+
+        Root()
+        .deliver 5
+        .all [brancher]
         .finally (c, res) ->
           chai.expect(res).to.be.an 'array'
           exp = expected.shift()

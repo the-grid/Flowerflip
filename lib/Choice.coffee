@@ -40,10 +40,16 @@ class Choice
 
     @continuation = false
 
+  hasSource: (choice) ->
+    return true if @ is choice
+    return false unless @source
+    return true if @source is choice
+    @source.hasSource choice
+
   namedPath: (includeSelf = false) ->
     path = if @source then @source.namedPath() else []
     if @state is State.FULFILLED or includeSelf
-      path.push @name if @name
+      path.push @name if @name and not @silent
       path = path.concat @attributes.paths
     path
 
@@ -95,6 +101,7 @@ class Choice
     branch.onBranch = @onBranch
     branch.onSubtree = @onSubtree
     branch.onAbort = @onAbort
+    branch.silent = silent
     clone = @toJSON()
     for key, val of clone
       continue if key in ['path', 'id', 'aborted']
