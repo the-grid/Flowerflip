@@ -28,6 +28,7 @@ log =
   errors: debug 'errors'
   values: debug 'values'
   branch: debug 'branch'
+  abort: debug 'abort'
 graphlib = require 'graphlib'
 dot = require 'graphlib-dot'
 
@@ -67,6 +68,7 @@ class BehaviorTree
 
   onAbort: (choice, reason, value, branched = false) =>
     log.tree "#{@name or @id} Non-collection #{choice} aborted with reason '%s'", reason
+    log.abort "#{@name or @id} Non-collection #{choice} aborted with reason '%s'", reason
     value = new Error reason unless value
     aborted =
       choice: choice

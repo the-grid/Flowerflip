@@ -25,6 +25,10 @@ To see more information on a running Flowerflip setup, there are two log setting
 * `errors`: see details about failed preconditions, aborted trees, and other errors
 * `values`: see the return values of the promises in the tree
 * `tree`: see details about tree execution, including which node is currently being executed
+* `collection`: see details about collection fulfillment
+* `branch`: see branching
+* `abort`: see aborts
+
 To use these, run Flowerflip with the `DEBUG` environment variable set, for example:
 ```
 $ DEBUG=errors grunt test
