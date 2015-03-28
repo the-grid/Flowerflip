@@ -266,11 +266,42 @@ describe 'Thenable', ->
           multiply.bind @, 3
         ], (c, results) ->
           paths = results.map (r) -> r.choice.namedPath().join '-'
-          idx = paths.indexOf 'a-tripled-btreethen'
+          idx = paths.indexOf 'a-2-tripled-btreethen'
           idx = 0 if idx is -1
           results[idx]
         .finally 'end',   (c, res) ->
           chai.expect(res).to.eql [15]
+          done()
+
+    describe 'promise chain within nested branching within continue', ->
+      it 'should execute the promise chain', (done) ->
+        multiply = (multiplier, c, data) ->
+          tree = c.continue 'a'
+          tree.deliver data
+          tree.then "#{multiplier}", (c, d) ->
+            c.branch 'plus', (pb, data) ->
+              c.continue()
+              .deliver data+1
+              .then (choice,d) ->
+                choice.branch 'doubled', (b, data) ->
+                  data * 2
+                choice.branch 'tripled', (b, data) ->
+                  btree = b.continue()
+                  btree.deliver data
+                  btree.then 'btreethen', (c, data) ->
+                    data * 3
+        t = Root()
+        t.deliver 5
+        .contest "contest-multiply", [
+          multiply.bind @, 2
+          multiply.bind @, 3
+        ], (c, results) ->
+          paths = results.map (r) -> r.choice.namedPath().join '-'
+          idx = paths.indexOf 'a-plus-tripled-btreethen'
+          idx = 0 if idx is -1
+          results[idx]
+        .finally 'end',   (c, res) ->
+          chai.expect(res).to.eql [18]
           done()
 
     describe.skip 'promise chain after branching', ->

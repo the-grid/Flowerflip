@@ -65,6 +65,9 @@ exports.deliverBranches = (state, originalChoice, choice, composite) ->
     return
   branches.forEach (b, i) ->
     choice.branch "#{choice.id}_#{i}", (bnode) ->
+      if choice.name and not choice.silent
+        bnode.name = choice.name
+        bnode.silent = false
       results = []
       for selected, idx in b
         continue unless selected

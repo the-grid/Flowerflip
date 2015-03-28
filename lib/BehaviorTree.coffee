@@ -238,6 +238,9 @@ class BehaviorTree
             branches.forEach (f, i) =>
               f.forEach (fulfilled) =>
                 choice.branch "#{choice.id}_#{i}", (bnode) =>
+                  if choice.name and not choice.silent
+                    bnode.name = choice.name
+                    bnode.silent = false
                   log.values "#{@name or @id} #{choice} resulted via branch #{bnode} in #{typeof fulfilled.value} %s", fulfilled.value
                   bnode.registerSubleaf fulfilled.choice, true, true
                   fulfilled.value
