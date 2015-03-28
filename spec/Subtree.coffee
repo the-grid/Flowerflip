@@ -186,3 +186,45 @@ describe 'Subtrees', ->
       testChild child,
         child:'yep 5'
         state:'w-child'
+
+  describe 'contest where subtrees branch and eat', ->
+    consumptionBrancher = (c, d) ->
+      c.tree 'consumption'
+      .deliver d
+      .then (choice, data) ->
+        choice.availableItems().forEach (i) ->
+          choice.branch "#{i.id}", (b, d) ->
+            b.set 'item', i
+      .then (choice, data) ->
+        item = choice.get 'item'
+        choice.eatItem item
+    sectionBrancher = (c, d) ->
+      c.tree 'section'
+      .deliver d
+      .then (choice, data) ->
+        ['a', 'b', 'c', 'd'].forEach (letter) ->
+          choice.branch letter, (b, d) ->
+            b.continue 'sub'
+            .deliver d
+            .then (c, d) ->
+              ['z', 'x', 'v', 'r'].forEach (letter) ->
+                choice.branch letter, (b, d) ->
+                  d
+      .all [consumptionBrancher]
+    it 'should only eat the chosen branch', (done) ->
+      t = Root()
+      t.deliver
+        items: [
+          id: 1
+        ,
+          id: 2
+        ,
+          id: 3
+        ]
+      .contest [
+        sectionBrancher
+      ]
+      .finally (c, d) ->
+        available = c.availableItems().map (i) -> i.id
+        chai.expect(available).to.eql [2, 3]
+        done()

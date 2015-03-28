@@ -4,6 +4,10 @@ chai = require 'chai'
 
 globalValues = {}
 
+debug = require 'debug'
+log =
+  subleaf: debug 'subleaf'
+
 class Choice
 
   @ensureActive: ensureActive
@@ -102,6 +106,7 @@ class Choice
     branch.onSubtree = @onSubtree
     branch.onAbort = @onAbort
     branch.silent = silent
+    branch.branchSource = @
     clone = @toJSON()
     for key, val of clone
       continue if key in ['path', 'id', 'aborted']
@@ -132,7 +137,9 @@ class Choice
     @onAbort @, reason, value, onBranch
 
   registerSubleaf: (leaf, accepted, consumeWithoutContinuation = true) ->
+    log.subleaf "#{@treeId} #{@} register subleaf #{leaf.treeId} #{leaf}, #{accepted} #{leaf.availableItems().length}"
     @attributes.tentativeItemsEaten = []
+    @branchSource.attributes.tentativeItemsEaten = [] if @branchSource
     @subLeaves = [] unless @subLeaves
     @subLeaves.push
       choice: leaf
@@ -148,6 +155,7 @@ class Choice
       @eatItem i, false
 
   registerTentativeSubleaf: (leaf) ->
+    log.subleaf "#{@treeId} #{@} tentative subleaf #{leaf.treeId} #{leaf} #{leaf.availableItems().length}"
     items = @availableItems()
     leafItems = leaf.availableItems()
     for i in items
@@ -207,6 +215,7 @@ class Choice
   eatItem: (item, checkActive = true) ->
     ensureActive @ if checkActive
     throw new Error 'No item provided' unless item
+    log.subleaf "#{@treeId} #{@} eat #{item.id}" if checkActive
     @attributes.itemsEaten.push item
     item
 
