@@ -68,7 +68,7 @@ class BehaviorTree
 
   onAbort: (choice, reason, value, branched = false) =>
     log.tree "#{@name or @id} Non-collection #{choice} aborted with reason '%s'", reason
-    log.abort "#{@name or @id} Non-collection #{choice} aborted with reason '%s'", reason
+    log.abort "#{@name or @id} Non-collection #{choice} aborted with reason '%s'", reason unless branched
     value = new Error reason unless value
     aborted =
       choice: choice
