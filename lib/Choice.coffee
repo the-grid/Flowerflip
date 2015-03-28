@@ -49,7 +49,7 @@ class Choice
   namedPath: (includeSelf = false) ->
     path = if @source then @source.namedPath() else []
     if @state is State.FULFILLED or includeSelf
-      path.push @name if @name and not @silent
+      path.push @name if @name and not @silent and @name.substr(0,2) isnt '//'
       path = path.concat @attributes.paths
     path
 

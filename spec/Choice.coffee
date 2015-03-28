@@ -1,5 +1,6 @@
 chai = require 'chai' unless chai
 Choice = require '../lib/Choice'
+{State} = require '../lib/state'
 
 describe 'Choice node API', ->
 
@@ -71,6 +72,14 @@ describe 'Choice node API', ->
       p = new Choice 'hello'
       c = new Choice p, 'world'
       chai.expect(p.path).to.eql ['hello']
+    it 'should not include names with // in namedPath', ->
+      pp = new Choice null, 'hello', 'hello'
+      p = new Choice pp, 'ignored', '//ignored'
+      c = new Choice p, 'world', 'world'
+      pp.state = State.FULFILLED
+      p.state = State.FULFILLED
+      c.state = State.FULFILLED
+      chai.expect(c.namedPath()).to.eql ['hello', 'world']
     it 'should not provide items if it has not been initialized with any', (done) ->
       validated = false
       p = new Choice 'hello'
