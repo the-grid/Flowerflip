@@ -121,20 +121,27 @@ class Thenable
 
     promise
 
-  race: (name, tasks) ->
+  race: (name, tasks, qualify = null) ->
     do @checkFinal
     if typeof name isnt 'string'
+      qualify = tasks
       tasks = name
       name = null
+
+    unless typeof qualify is 'function'
+      # Pick the first one
+      qualify = (solution, previousSolutions) -> solution
 
     callback = (choice, data) ->
       subtree = choice.continue name
       composite = subtree.then (subChoice, data) ->
-        Collection.run tasks, composite, subChoice, data, (state, latest) ->
+        Collection.run tasks, composite, subChoice, data, (state, latestValue, latest) ->
           if state.countFulfilled() > 0
+            result = qualify latest, state.getFulfilled()
+            return unless result.choice
             state.finished = true
-            fulfills = state.getFulfilled().filter (f) -> typeof f isnt 'undefined'
-            composite.deliver fulfills[0][0] or fulfills[0]
+            subChoice.registerSubleaf result.choice, true, true
+            composite.deliver result.value
             return
           return state unless state.isComplete()
           rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'

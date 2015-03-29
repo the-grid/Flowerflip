@@ -844,6 +844,31 @@ describe 'Thenable', ->
           chai.expect(res).to.equal 10
           done()
 
+    describe 'with qualified race & return values', ->
+      it 'should resolve', (done) ->
+        called = 0
+        multiply = (multiplier, orig, data) ->
+          orig.tree 'a'
+          .deliver data
+          .then (c, d) ->
+            called++
+            d * multiplier
+        Root()
+        .deliver 5
+        .race [
+          multiply.bind @, 2
+          multiply.bind @, 3
+          multiply.bind @, 4
+        ], (result, results) ->
+          return result if result.value > 10
+          return false
+        .finally (c, res) ->
+          chai.expect(res).to.equal 15
+          setTimeout ->
+            chai.expect(called).to.equal 2
+            done()
+          , 1
+
     describe 'with race & abort', ->
       it 'should resolve', (done) ->
         multiply = (multiplier, orig, data) ->

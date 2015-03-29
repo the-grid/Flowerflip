@@ -105,7 +105,7 @@ class SubtreeResults
     collection[idx][path] =
       choice: choice
       value: value
-    callback @, value
+    callback @, value, collection[idx][path]
 
   registerTree: (idx, tree, onResult) ->
     @tree = tree
