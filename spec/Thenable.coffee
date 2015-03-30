@@ -903,7 +903,21 @@ describe 'Thenable', ->
         .finally (c, res) ->
           chai.expect(res).to.equal 3
           done()
-
+      it 'should reject when run without tasks', (done) ->
+        Root()
+        .deliver 5
+        .race []
+        .finally (c, res) ->
+          chai.expect(res).to.be.instanceof Error
+          done()
+      it 'should reject qualified race when run without tasks', (done) ->
+        Root()
+        .deliver 5
+        .race [], (result, results) ->
+          return result
+        .finally (c, res) ->
+          chai.expect(res).to.be.instanceof Error
+          done()
 
   #8b           d88                           88
   #88b         d888                           88
