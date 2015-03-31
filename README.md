@@ -284,6 +284,9 @@ Once an item is eaten, it is no longer available for the current choice and its 
 
 No eating of items should be done in  `.all()` promise method since they all run in parallel we could easily get in the situation where we eat the same item twice.
 
+#### getItem
+The `getItem` function can be passed a callback function. If no callback is received, the first item in the `availableItems` collection will be returned. Otherwise, the callback function will be called for each available items. If the callback function returns a `truthy` value for a given item, that item will then be returned from the `getItem` function otherwise the loop will continue until there's no more available items. 
+
 #### Blocks
 Items can have blocks, which is the item content. For example, an HTML item would be composed of blocks representing the innerHTML of the item tag.
 
