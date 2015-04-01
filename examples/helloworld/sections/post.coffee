@@ -22,6 +22,19 @@ textComponent = (choice, item) ->
   .then (c, b) ->
     "<p>#{b.text}</p>"
 
+blockComponent = (choice, item) ->
+  t = choice.tree 'text'
+  t.deliver item
+  .then (c, d) ->
+    block = choice.getBlock item, (b) ->
+      ch.expect(b.html).to.be.a 'string'
+      b.type not in ['text', 'h1']
+    c.expect(block).to.be.an 'object'
+    choice.eatBlock block
+    block
+  .then (c, b) ->
+    b.html
+
 module.exports = (choice, data) ->
   t = choice.tree 'post'
   t.deliver data
@@ -46,6 +59,7 @@ module.exports = (choice, data) ->
   .some [
     titlesComponent.bind @, 'h1'
     textComponent
+    blockComponent
   ]
   .then (c, res) ->
     # Mark item as eaten upstream
