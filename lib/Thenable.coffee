@@ -148,6 +148,7 @@ class Thenable
           unless rejects.length
             rejects = state.getAborted()
           composite.reject rejects[rejects.length - 1][0] or rejects[rejects.length - 1]
+        , false
       subtree.deliver data
       composite
     id = @tree.registerNode @id, name, 'race', callback
@@ -212,7 +213,7 @@ class Thenable
           state.finished = true
           composite.deliver chosenSolutions.map (c) -> c.value
           return
-        Collection.run tasks, composite, subChoice, data, onResult
+        Collection.run tasks, composite, subChoice, data, onResult, false
       composite = subtree.then subCallback
       subtree.deliver data
       composite

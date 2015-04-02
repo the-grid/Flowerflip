@@ -6,7 +6,7 @@ log =
   errors: debug 'errors'
   values: debug 'values'
 
-exports.run = (tasks, composite, choice, data, onResult) ->
+exports.run = (tasks, composite, choice, data, onResult, eatTentatively = true) ->
   if typeof tasks is 'function'
     tasks = tasks choice, data
 
@@ -31,7 +31,7 @@ exports.run = (tasks, composite, choice, data, onResult) ->
         state.registerTree i, val.tree, onResult
         val.then (p, d) ->
           log.values "#{choice} task #{i} #{p} resulted in #{typeof d} %s", d
-          choice.registerTentativeSubleaf p
+          choice.registerTentativeSubleaf p if eatTentatively
           state.handleResult state.fulfilled, i, p, d, onResult
           return
         val.else (p, e) ->
