@@ -23,49 +23,26 @@ module.exports = ->
           'level': 'ignore'
 
     # Building for browser
-    coffee:
-      helloworld:
-        options:
-          bare: true
-        expand: true
-        cwd: 'examples/helloworld'
-        src: ['**/*.coffee']
-        dest: 'browser/examples/helloworld/'
-        ext: '.js'
-      lib:
-        options:
-          bare: true
-        expand: true
-        cwd: 'lib'
-        src: ['**/*.coffee', '../index.coffee']
-        dest: 'browser/lib/'
-        ext: '.js'
-      spec:
-        options:
-          bare: true
-        expand: true
-        cwd: 'spec'
-        src: ['**/*.coffee']
-        dest: 'browser/spec/'
-        ext: '.js'
-
     browserify:
       helloworld:
         src: [ 'browser/examples/helloworld/index.js' ],
         dest: './browser/dist/helloworld.js',
         options:
+          transform: ['coffeeify']
           browserifyOptions:
             standalone: 'helloworld'
       lib:
         src: [ 'browser/index.js' ],
         dest: './browser/dist/flowerflip.js',
         options:
+          transform: ['coffeeify']
           browserifyOptions:
             standalone: 'flowerflip'
       spec:
         src: [ 'browser/spec/*.js' ],
         dest: './browser/dist/spec.js',
         options:
+          transform: ['coffeeify']
           browserifyOptions:
             standalone: 'spec'
 
@@ -83,11 +60,10 @@ module.exports = ->
   @loadNpmTasks 'grunt-mocha-phantomjs'
 
   # Grunt plugins for deploying layout filter
-  @loadNpmTasks 'grunt-contrib-coffee'
   @loadNpmTasks 'grunt-browserify'
 
-  @registerTask 'build-helloworld', ['coffee:helloworld', 'browserify:helloworld']
-  @registerTask 'build-lib', ['coffee:lib', 'browserify:lib']
+  @registerTask 'build-helloworld', ['browserify:helloworld']
+  @registerTask 'build-lib', ['browserify:lib']
 
   @registerTask 'build', ['build-lib', 'build-helloworld']
 
@@ -95,7 +71,6 @@ module.exports = ->
     'coffeelint'
     'mochaTest'
     'build'
-    'coffee:spec'
     'browserify:spec'
     'mocha_phantomjs'
   ]
