@@ -25,26 +25,35 @@ module.exports = ->
     # Building for browser
     browserify:
       helloworld:
-        src: [ 'browser/examples/helloworld/index.js' ],
-        dest: './browser/dist/helloworld.js',
         options:
-          transform: ['coffeeify']
+          transform: [
+            ['coffeeify', {global: true}]
+          ]
           browserifyOptions:
+            extensions: ['.coffee']
             standalone: 'helloworld'
+        files:
+          'browser/dist/helloworld.js': ['examples/helloworld/index.coffee']
       lib:
-        src: [ 'browser/index.js' ],
-        dest: './browser/dist/flowerflip.js',
         options:
-          transform: ['coffeeify']
+          transform: [
+            ['coffeeify', {global: true}]
+          ]
           browserifyOptions:
+            extensions: ['.coffee']
             standalone: 'flowerflip'
+        files:
+          'browser/dist/flowerflip.js': ['index.coffee']
       spec:
-        src: [ 'browser/spec/*.js' ],
-        dest: './browser/dist/spec.js',
         options:
-          transform: ['coffeeify']
+          transform: [
+            ['coffeeify', {global: true}]
+          ]
           browserifyOptions:
+            extensions: ['.coffee']
             standalone: 'spec'
+        files:
+          'browser/dist/spec.js': ['spec/*.coffee']
 
     # BDD tests on browser
     mocha_phantomjs:
