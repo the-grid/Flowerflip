@@ -26,6 +26,7 @@ debug = require 'debug'
 log =
   tree: debug 'tree'
   errors: debug 'errors'
+  asserts: debug 'asserts'
   values: debug 'values'
   branch: debug 'branch'
   abort: debug 'abort'
@@ -288,6 +289,7 @@ class BehaviorTree
       # Rejected
       return if choice.state is State.ABORTED
       if e instanceof chai.AssertionError
+        log.asserts "#{@name or @id} #{choice} resulted in %s", e.message
         choice.set 'preconditionFailed', e if isActive choice
         throwVal = choice.get 'preconditionFailedData'
         e = throwVal or e

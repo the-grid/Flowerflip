@@ -1,9 +1,11 @@
 {State} = require './state'
 SubtreeResults = require './SubtreeResults'
 debug = require 'debug'
+chai = require 'chai'
 log =
   tree: debug 'tree'
   errors: debug 'errors'
+  asserts: debug 'asserts'
   values: debug 'values'
 
 exports.run = (tasks, composite, choice, data, onResult, eatTentatively = true) ->
@@ -45,6 +47,8 @@ exports.run = (tasks, composite, choice, data, onResult, eatTentatively = true) 
       log.values "#{choice} task #{i} resulted directly in #{typeof val} %s", val
       state.handleResult state.fulfilled, i, null, val, onResult
     catch e
+      if e instanceof chai.AssertionError
+        log.asserts "#{@name or @id} #{choice} resulted in %s", e.message
       log.errors "#{choice} task #{i} resulted in %s", e.message
       state.handleResult state.rejected, i, null, e, onResult
   return state

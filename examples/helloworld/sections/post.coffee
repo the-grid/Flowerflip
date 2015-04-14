@@ -3,8 +3,8 @@ titlesComponent = (type, choice, item) ->
   t.deliver item
   .then (c, d) ->
     block = choice.getBlock item, (b) ->
-      c.expect(b.type).to.equal type
-    c.expect(block).to.be.an 'object'
+      c.expect(b.type, null, "#{b.type} should be #{type}").to.equal type
+    c.expect(block, null, "Should have produced a block").to.be.an 'object'
     choice.eatBlock block
     block
   .then (c, b) ->
@@ -15,8 +15,8 @@ textComponent = (choice, item) ->
   t.deliver item
   .then (c, d) ->
     block = choice.getBlock item, (b) ->
-      c.expect(b.type).to.equal 'text'
-    c.expect(block).to.be.an 'object'
+      c.expect(b.type, null, "#{b.type} should be text").to.equal 'text'
+    c.expect(block, null, "Should have produced a block").to.be.an 'object'
     choice.eatBlock block
     block
   .then (c, b) ->
@@ -27,9 +27,9 @@ blockComponent = (choice, item) ->
   t.deliver item
   .then (c, d) ->
     block = choice.getBlock item, (b) ->
-      ch.expect(b.html).to.be.a 'string'
+      c.expect(b.html, null, "Block needs to be HTML").to.be.a 'string'
       b.type not in ['text', 'h1']
-    c.expect(block).to.be.an 'object'
+    c.expect(block, null, "Should have produced a block").to.be.an 'object'
     choice.eatBlock block
     block
   .then (c, b) ->

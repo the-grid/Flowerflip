@@ -23,6 +23,7 @@ t = f.Root()
 ### Debugging
 To see more information on a running Flowerflip setup, there are two log settings available:
 * `errors`: see details about failed preconditions, aborted trees, and other errors
+* `asserts`: see details about failed preconditions
 * `values`: see the return values of the promises in the tree
 * `tree`: see details about tree execution, including which node is currently being executed
 * `collection`: see details about collection fulfillment
