@@ -358,3 +358,56 @@ describe 'Choice node API', ->
           val = b.getGlobal 'foo'
           chai.expect(val).to.equal 'bar'
           done()
+
+  describe 'with ordered mode', ->
+    it 'getItem should validate only the first item', (done) ->
+      validated = false
+      providedItems = [
+        id: 'foo'
+      ,
+        id: 'bar'
+      ]
+      c = new Choice 'hello'
+      c.attributes.ordered = true
+      c.attributes.items.push item for item in providedItems
+      item = c.getItem (i) ->
+        c.expect(i.id).to.not.equal 'foo'
+      chai.expect(item).to.be.a 'null'
+      done()
+    it 'getBlock should validate only the first block', (done) ->
+      validated = false
+      providedItems = [
+        id: 'foo'
+        content: [
+          id: 'bar'
+        ,
+          id: 'baz'
+        ]
+      ]
+      c = new Choice 'hello'
+      c.attributes.ordered = true
+      c.attributes.items.push item for item in providedItems
+      item = c.getItem()
+      block = c.getBlock item, (b) ->
+        c.expect(b.id).to.not.equal 'bar'
+      chai.expect(block).to.be.a 'null'
+      done()
+    it 'getBlock should validate only the first non-eaten block', (done) ->
+      validated = false
+      providedItems = [
+        id: 'foo'
+        content: [
+          id: 'bar'
+        ,
+          id: 'baz'
+        ]
+      ]
+      c = new Choice 'hello'
+      c.attributes.ordered = true
+      c.attributes.items.push item for item in providedItems
+      item = c.getItem()
+      c.eatBlock c.getBlock item
+      block = c.getBlock item
+      chai.expect(block).to.not.be.a 'null'
+      chai.expect(block.id).to.equal 'baz'
+      done()

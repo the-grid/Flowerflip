@@ -199,6 +199,8 @@ class Choice
   getItem: (callback) ->
     ensureActive @
     items = @availableItems()
+    items = items.slice 0, 1 if @attributes.ordered
+
     return null unless items.length
 
     unless typeof callback is 'function'
@@ -243,6 +245,7 @@ class Choice
     ensureActive @
     return null unless item.content?.length
     blocks = @availableBlocks item
+    blocks = blocks.slice 0, 1 if @attributes.ordered
     return null unless blocks.length
 
     unless typeof callback is 'function'
