@@ -60,7 +60,7 @@ class Thenable
           rejects = state.getRejected().filter (e) -> typeof e isnt 'undefined'
           unless rejects.length
             rejects = state.getAborted()
-          composite.fulfill rejects[0][0] or rejects[0]
+          composite.deliver rejects[0][0] or rejects[0]
           return
       subtree.deliver data
       composite
