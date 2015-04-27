@@ -198,10 +198,11 @@ class Choice
       throw new Error "Global value '#{name}' is already set"
     globalValues[name] = value
 
-  getItem: (callback) ->
+  getItem: (callback, depth = 4) ->
     ensureActive @
+    depth = 1 if @attributes.ordered
     items = @availableItems()
-    items = items.slice 0, 1 if @attributes.ordered
+    items = items.slice 0, depth
 
     return null unless items.length
 
