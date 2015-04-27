@@ -7,6 +7,8 @@ globalValues = {}
 debug = require 'debug'
 log =
   subleaf: debug 'subleaf'
+  asserts: debug 'asserts'
+  errors: debug 'errors'
 
 class Choice
 
@@ -211,6 +213,9 @@ class Choice
         ret = callback item
         return item if ret
       catch e
+        log.errors "#{@treeId} #{@} getItem resulted in %s", e.message
+        if e instanceof chai.AssertionError
+          log.asserts "#{@treeId} #{@} getItem resulted in %s", e.message
         continue
     null
 
@@ -256,6 +261,9 @@ class Choice
         ret = callback block
         return block if ret
       catch e
+        log.errors "#{@treeId} #{@} getItem resulted in %s", e.message
+        if e instanceof chai.AssertionError
+          log.asserts "#{@treeId} #{@} getItem resulted in %s", e.message
         continue
     null
 
