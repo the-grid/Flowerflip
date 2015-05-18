@@ -1,25 +1,3 @@
-Fletcher = require('fletcher')()
-
-harmony = (f) ->
-  f.rule [
-    'miss'
-    ['rhythm'
-      [['.','left']],
-      [['.','left']]
-    ]
-    ['strength','strong']
-  ]
-  f.rule [
-    'miss'
-    ['rhythm'
-      [['.','right']],
-      [['.','right']]
-    ]
-    ['strength','strong']
-  ]
-  f
-
-score = Fletcher.compile harmony
 compare = (a, b) ->
   if a.total > b.total
     return -1
@@ -38,8 +16,12 @@ module.exports = (c, data) ->
     before = chosenSolutions.map (c) -> c.choice.toSong()
     for r in results
       song = before.concat [r.choice.toSong()]
-      r.score = score.grade song
-      r.total = r.score.map((s) -> s.score).reduce (a, b) -> a+b
+      score = 0
+      for p in song[song.length - 1].path
+        continue unless before.length
+        if before[before.length - 1].path.indexOf(p) is -1
+          score++
+      r.total = score
     results.sort compare
     results[0]
   , (n, chosen) ->
