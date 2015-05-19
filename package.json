@@ -35,5 +35,9 @@
     "grunt-mocha-phantomjs": "^0.6.0",
     "grunt-mocha-test": "^0.12.7",
     "mocha": "^2.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/the-grid/Flowerflip.git"
   }
 }
