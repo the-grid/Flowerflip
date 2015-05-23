@@ -39,5 +39,11 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/the-grid/Flowerflip.git"
+  },
+  "browserify": {
+    "name": "Flowerflip",
+    "transform": [
+      "coffeeify"
+    ]
   }
 }

@@ -26,9 +26,6 @@ module.exports = ->
     browserify:
       helloworld:
         options:
-          transform: [
-            ['coffeeify', {global: true}]
-          ]
           browserifyOptions:
             extensions: ['.coffee']
             standalone: 'helloworld'
@@ -36,9 +33,6 @@ module.exports = ->
           'browser/dist/helloworld.js': ['examples/helloworld/index.coffee']
       lib:
         options:
-          transform: [
-            ['coffeeify', {global: true}]
-          ]
           browserifyOptions:
             extensions: ['.coffee']
             standalone: 'flowerflip'
@@ -46,9 +40,6 @@ module.exports = ->
           'browser/dist/flowerflip.js': ['index.coffee']
       spec:
         options:
-          transform: [
-            ['coffeeify', {global: true}]
-          ]
           browserifyOptions:
             extensions: ['.coffee']
             standalone: 'spec'
