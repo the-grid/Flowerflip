@@ -1,6 +1,6 @@
 {
   "name": "flowerflip",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Layout solver",
   "main": "index.js",
   "scripts": {
