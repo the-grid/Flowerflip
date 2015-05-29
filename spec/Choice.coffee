@@ -284,6 +284,7 @@ describe 'Choice node API', ->
       chai.expect(c.isSubtypeOf('headline', 'textual')).to.equal true
       chai.expect(c.isSubtypeOf('text', 'textual')).to.equal true
       chai.expect(c.isSubtypeOf('code', 'textual')).to.equal true
+      chai.expect(c.isSubtypeOf('quote', 'textual')).to.equal true
     it 'should not recognize non-text elements as a textual', ->
       chai.expect(c.isSubtypeOf('image', 'textual')).to.equal false
       chai.expect(c.isSubtypeOf('video', 'textual')).to.equal false

@@ -9,7 +9,7 @@ module.exports =
     return true if checkType is 'block'
     return true if type is checkType
     if checkType is 'textual'
-      return true if type in ['text', 'code']
+      return true if type in ['text', 'code', 'quote']
       return @isSubtypeOf type, 'headline'
     if checkType is 'media'
       return type in ['image', 'video', 'audio', 'article', 'location', 'quote']
