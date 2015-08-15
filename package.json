@@ -14,6 +14,7 @@
   "dependencies": {
     "chai": "^2.0.0",
     "coffee-script": "^1.9.0",
+    "coffeeify": "^1.0.0",
     "debug": "~2.1.1",
     "graphlib": "^1.0.1",
     "graphlib-dot": "^0.6.1"
@@ -25,9 +26,6 @@
       "url": "https://github.com/the-grid/Flowerflip/raw/master/LICENSE"
     }
   ],
-  "dependencies": {
-    "coffeeify": "^1.0.0"
-  },
   "devDependencies": {
     "coffeelint": "^1.8.1",
     "grunt": "^0.4.5",
