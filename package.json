@@ -16,7 +16,7 @@
     "coffee-script": "1.10.0",
     "coffeeify": "1.1.0",
     "debug": "2.2.0",
-    "graphlib": "1.0.7",
+    "graphlib": "2.1.0",
     "graphlib-dot": "0.6.2"
   },
   "author": "Henri Bergius <henri.bergius@iki.fi>",
