@@ -1,8 +1,5 @@
 language: node_js
 node_js:
-- '0.10'
+- '0.12'
 before_script:
 - npm install -g grunt-cli
-notifications:
-  slack:
-    secure: GAv1HNxnBJTEa7s76nsDuDQZIuTC//E3/MNtjCsW2LbUcRotlgD8rcRXRpTg2Cn/MN8QpDfcAR4s0uBTyBdodJE6+1+sxoXpVCoUDggWbrK/KC9rPEiE8QGw4VEJ+kZOKII1v4S9UDdQr4x0TXjcPUSEY+rK19TvV2IzH08s/SA=
