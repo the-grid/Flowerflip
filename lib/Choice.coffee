@@ -1,6 +1,6 @@
 {State, ensureActive} = require './state'
 chai = require 'chai'
-{isSubtypeOf} = require './schema'
+{isSubtypeOf} = require '@the-grid/schema/lib/schema'
 
 globalValues = {}
 

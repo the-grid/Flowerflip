@@ -1,6 +1,6 @@
 {
   "name": "flowerflip",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Layout solver",
   "main": "index.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "lib"
   ],
   "dependencies": {
+    "@the-grid/schema": "^0.1.1",
     "chai": "3.3.0",
     "coffee-script": "1.10.0",
     "coffeeify": "1.1.0",
