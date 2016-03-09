@@ -21,12 +21,7 @@
     "graphlib-dot": "0.6.2"
   },
   "author": "Henri Bergius <henri.bergius@iki.fi>",
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "https://github.com/the-grid/Flowerflip/raw/master/LICENSE"
-    }
-  ],
+  "license": "MIT",
   "devDependencies": {
     "coffeelint": "1.13.0",
     "grunt": "0.4.5",
