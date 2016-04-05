@@ -23,7 +23,7 @@
   "author": "Henri Bergius <henri.bergius@iki.fi>",
   "license": "MIT",
   "devDependencies": {
-    "coffeelint": "1.13.0",
+    "coffeelint": "1.14.2",
     "grunt": "0.4.5",
     "grunt-browserify": "5.0.0",
     "grunt-coffeelint": "0.0.13",
