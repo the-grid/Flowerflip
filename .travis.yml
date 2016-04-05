@@ -11,3 +11,11 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - g++-4.8
+deploy:
+  provider: npm
+  email: henri.bergius@iki.fi
+  api_key:
+    secure: guKUks9i6YjMBDSTwtVBfM/RujeWAwpviiekU8O2LBtgSSZ7soDRbmG213HdGvBT2F1EXj3foeQlAPXI0XJNWAFG295P2+6F8spltkYeCaCXJ//QgRZxrGSJvXXAYwWH6yRFoePWadk+b53DHQHzmCss6wikiLfBakaYplF/RuUswHAW1m+8S1IhJ+0TdmtsbCy81jIABm5TCMklVvsVWofj+BX1OA9n00rL+dA4s4w2W93DPQzwEg8S0I11pWW3l751OYzyjoKf4/kmzN/GjaIspjgHiNac/lPPu7cUtt8wPfBE73mqqZicAbOmvYV1UXoKA5DcuQxMAx2WpzDAlejXRqkw6UZPml6fOxQBhwliQPHKCv+7fhQ3+0L32MQxt3t180WRUMZH5I9LbWi4wFIm6qV9xgRj0igHsthXFtJvibwtjYdGIHITuig1V92gdPdozY4KdtP0132WrhfKE3+0MaeJREa8z1o6UqcY92JzSoRv8Y/nMytMXpiNnOC9yjvFoTZrbvY0YTw7bZaJ5uPdgmdLc60/XjkpfFUKlE63AMcFxkXqOPBWFUYMpzRbkXrTtzAxvl/IvUuFCy/qvmLP+AyygA+9rhUoIAqCxWcB/iaJTV4EmUs7hTm06B03S3j2ErWntEDeKXkbazVVq8qWG0O8H4Ad7/Q9FaLxiXQ=
+  on:
+    tags: true
+    repo: the-grid/Flowerflip
