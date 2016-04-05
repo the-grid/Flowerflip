@@ -52,6 +52,7 @@ module.exports = ->
         options:
           output: 'spec/result.xml'
           reporter: 'spec'
+          failWithOutput: true
           urls: ['spec/runner.html']
 
   # Grunt plugins used for testing
