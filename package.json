@@ -15,7 +15,7 @@
     "@the-grid/schema": "^0.1.1",
     "chai": "3.3.0",
     "coffee-script": "1.10.0",
-    "coffeeify": "1.1.0",
+    "coffeeify": "2.0.1",
     "debug": "2.2.0",
     "graphlib": "2.1.0",
     "graphlib-dot": "0.6.2"
