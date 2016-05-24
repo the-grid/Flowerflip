@@ -15,7 +15,6 @@
     "@the-grid/schema": "^0.1.1",
     "chai": "~3.5.0",
     "coffee-script": "~1.10.0",
-    "coffeeify": "~2.0.1",
     "debug": "~2.2.0",
     "graphlib": "~2.1.0",
     "graphlib-dot": "~0.6.2"
@@ -23,6 +22,7 @@
   "author": "Henri Bergius <henri.bergius@iki.fi>",
   "license": "MIT",
   "devDependencies": {
+    "coffeeify": "^2.0.1",
     "coffeelint": "^1.15.7",
     "grunt": "^0.4.5",
     "grunt-browserify": "^5.0.0",
