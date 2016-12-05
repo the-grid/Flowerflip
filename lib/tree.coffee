@@ -94,9 +94,9 @@ class Tree
     tos = edge.subTo or ["t#{id}_#{edge.to}"]
 
     dot = ''
-    for from in froms
-      for to in tos
-        dot += "#{prefix}  #{from} -> #{to}"
+    for fromEdge in froms
+      for toEdge in tos
+        dot += "#{prefix}  #{fromEdge} -> #{toEdget}"
         attributes = {}
         attributes.label = edge.name or edge.type
 
