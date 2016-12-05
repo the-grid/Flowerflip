@@ -28,7 +28,7 @@
     "grunt-browserify": "^5.0.0",
     "grunt-coffeelint": "^0.0.16",
     "grunt-contrib-coffee": "^1.0.0",
-    "grunt-mocha-phantomjs": "^3.0.0",
+    "grunt-mocha-phantomjs": "^4.0.0",
     "grunt-mocha-test": "^0.13.2",
     "mocha": "^3.2.0"
   },
