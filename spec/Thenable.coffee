@@ -868,6 +868,7 @@ describe 'Thenable', ->
             chai.expect(called).to.equal 2
             done()
           , 1
+        return
 
     describe 'with qualified race, branches  & return values', ->
       it 'should resolve', (done) ->
@@ -897,6 +898,7 @@ describe 'Thenable', ->
             chai.expect(called).to.equal 4
             done()
           , 1
+        return
 
     describe 'with race & abort', ->
       it 'should resolve', (done) ->
